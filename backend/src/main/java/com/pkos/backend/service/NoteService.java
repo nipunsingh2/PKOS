@@ -13,42 +13,41 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class NoteService {
 
+    private static final Logger logger =
+        LoggerFactory.getLogger(NoteService.class);
     private final NoteRepository noteRepository;
     private final NoteMapper noteMapper;
-    private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
     public NoteService(
                 NoteRepository noteRepository,
                 NoteMapper noteMapper,
-                UserRepository userRepository) {
+                CurrentUserService currentUserService) {
 
         this.noteRepository = noteRepository;
         this.noteMapper = noteMapper;
-        this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
         }
         
-    private User getCurrentUser() {
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                    new ResourceNotFoundException("Authenticated user not found"));
-        }
-
     public NoteResponse createNote(CreateNoteRequest request) {
 
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
+        logger.info("Creating note for user: {}", currentUser.getEmail());
         Note note = noteMapper.toEntity(request);
         note.setUser(currentUser);
         Note savedNote = noteRepository.save(note);
+        logger.info(
+                "Note created successfully. Note ID: {}, User: {}",
+                savedNote.getId(),
+                currentUser.getEmail());
         return noteMapper.toResponse(savedNote);
         }
 
@@ -58,7 +57,7 @@ public class NoteService {
                 String sortBy,
                 String direction) {
 
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
 
         Sort sort = direction.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
@@ -79,7 +78,7 @@ public class NoteService {
                 int size,
                 String sortBy,
                 String direction) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
 
 
         Sort sort = direction.equalsIgnoreCase("desc")
@@ -98,7 +97,7 @@ public class NoteService {
     }
 
     public NoteResponse getNoteById(Long id) {
-        User currentUser=getCurrentUser();
+        User currentUser=currentUserService.getCurrentUser();
         Note note=noteRepository
                 .findByIdAndUser(id,currentUser)
                 .orElseThrow(() ->
@@ -107,7 +106,7 @@ public class NoteService {
     }
 
     public NoteResponse updateNote(Long id, UpdateNoteRequest request) {
-        User currentUser=getCurrentUser();
+        User currentUser=currentUserService.getCurrentUser();
         Note note=noteRepository
                 .findByIdAndUser(id,currentUser)
                 .orElseThrow(() ->
@@ -115,15 +114,23 @@ public class NoteService {
         note.setTitle(request.getTitle());
         note.setContent(request.getContent());
         Note updatedNote = noteRepository.save(note);
+        logger.info(
+                "Note updated successfully. Note ID: {}, User: {}",
+                updatedNote.getId(),
+                currentUser.getEmail());
         return noteMapper.toResponse(updatedNote);
     }
 
     public void deleteNote(Long id) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
         Note note = noteRepository
                 .findByIdAndUser(id, currentUser)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Note not found" + id));
+        logger.info(
+                "Note deleted successfully. Note ID: {}, User: {}",
+                note.getId(),
+                currentUser.getEmail());
         noteRepository.delete(note);
     }
 }

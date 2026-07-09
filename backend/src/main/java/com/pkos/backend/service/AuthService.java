@@ -10,6 +10,8 @@ import com.pkos.backend.exception.UserNotFoundException;
 import com.pkos.backend.repository.UserRepository;
 import com.pkos.backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,20 +22,30 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final Logger logger =
+            LoggerFactory.getLogger(AuthService.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
     public void register(RegisterRequest request) {
+
+        logger.info("Registration attempt for email: {}", request.getEmail());
+
         validateRegistration(request);
 
         User user = buildUser(request);
 
         userRepository.save(user);
+
+        logger.info("User registered successfully with email: {}", request.getEmail());
     }
 
     public AuthResponse login(LoginRequest request) {
+
+        logger.info("Login attempt for email: {}", request.getEmail());
 
         authenticate(request);
 
@@ -42,6 +54,8 @@ public class AuthService {
         UserDetails userDetails = buildUserDetails(user);
 
         String token = jwtService.generateToken(userDetails);
+
+        logger.info("User logged in successfully: {}", request.getEmail());
 
         return new AuthResponse(token, "Bearer");
     }

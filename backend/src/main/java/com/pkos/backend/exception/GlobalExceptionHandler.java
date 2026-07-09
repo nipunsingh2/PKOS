@@ -6,16 +6,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger logger =
+        LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(
             MethodArgumentNotValidException exception) {
+                logger.warn("Validation failed.");
 
         Map<String, String> errors = new HashMap<>();
 
@@ -37,6 +43,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
             ResourceNotFoundException exception) {
+                logger.warn("Resource not found: {}", exception.getMessage());
 
         ErrorResponse response = new ErrorResponse(
                 LocalDateTime.now(),
@@ -51,7 +58,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateResourceException.class)
         public ResponseEntity<ErrorResponse> handleDuplicateResourceException(
                 DuplicateResourceException exception) {
-
+                        logger.warn("Duplicate resource: {}", exception.getMessage());
                 ErrorResponse response = new ErrorResponse(
                         LocalDateTime.now(),
                         HttpStatus.CONFLICT.value(),
