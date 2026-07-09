@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -50,15 +49,16 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
-        public ResponseEntity<Object> handleDuplicateResource(
-                DuplicateResourceException ex) {
+        public ResponseEntity<ErrorResponse> handleDuplicateResourceException(
+                DuplicateResourceException exception) {
 
-                return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(Map.of(
-                        "timestamp", LocalDateTime.now(),
-                        "status", HttpStatus.CONFLICT.value(),
-                        "message", ex.getMessage()
-                ));
+                ErrorResponse response = new ErrorResponse(
+                        LocalDateTime.now(),
+                        HttpStatus.CONFLICT.value(),
+                        exception.getMessage(),
+                        null
+                );
+
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
         }
 }

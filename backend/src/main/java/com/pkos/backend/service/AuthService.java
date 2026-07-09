@@ -6,6 +6,7 @@ import com.pkos.backend.dto.response.AuthResponse;
 import com.pkos.backend.entity.User;
 import com.pkos.backend.exception.EmailAlreadyExistsException;
 import com.pkos.backend.exception.UserAlreadyExistsException;
+import com.pkos.backend.exception.UserNotFoundException;
 import com.pkos.backend.repository.UserRepository;
 import com.pkos.backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,27 @@ public class AuthService {
     private final JwtService jwtService;
 
     public void register(RegisterRequest request) {
+        validateRegistration(request);
+
+        User user = buildUser(request);
+
+        userRepository.save(user);
+    }
+
+    public AuthResponse login(LoginRequest request) {
+
+        authenticate(request);
+
+        User user = getUserByEmail(request.getEmail());
+
+        UserDetails userDetails = buildUserDetails(user);
+
+        String token = jwtService.generateToken(userDetails);
+
+        return new AuthResponse(token, "Bearer");
+    }
+
+    private void validateRegistration(RegisterRequest request) {
 
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new UserAlreadyExistsException();
@@ -33,17 +55,18 @@ public class AuthService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException();
         }
+    }
 
-        User user = User.builder()
+    private User buildUser(RegisterRequest request) {
+
+        return User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .build();
-
-        userRepository.save(user);
     }
 
-    public AuthResponse login(LoginRequest request) {
+    private void authenticate(LoginRequest request) {
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -51,19 +74,20 @@ public class AuthService {
                         request.getPassword()
                 )
         );
+    }
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    private User getUserByEmail(String email) {
 
-        UserDetails userDetails =
-                org.springframework.security.core.userdetails.User
-                        .withUsername(user.getEmail())
-                        .password(user.getPassword())
-                        .authorities("ROLE_USER")
-                        .build();
+        return userRepository.findByEmail(email)
+                .orElseThrow(UserNotFoundException::new);
+    }
 
-        String token = jwtService.generateToken(userDetails);
+    private UserDetails buildUserDetails(User user) {
 
-        return new AuthResponse(token, "Bearer");
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getEmail())
+                .password(user.getPassword())
+                .authorities("ROLE_USER")
+                .build();
     }
 }
