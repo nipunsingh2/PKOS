@@ -14,6 +14,7 @@ public class NoteMapper {
 
         note.setTitle(request.getTitle());
         note.setContent(request.getContent());
+        note.setColor(request.getColor());
 
         return note;
     }
@@ -27,6 +28,7 @@ public class NoteMapper {
         response.setContent(note.getContent());
         response.setCreatedAt(note.getCreatedAt());
         response.setUpdatedAt(note.getUpdatedAt());
+        response.setColor(note.getColor());
 
         return response;
     }

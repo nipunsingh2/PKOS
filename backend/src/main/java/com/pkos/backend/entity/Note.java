@@ -39,6 +39,9 @@ public class Note {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(length = 20)
+    private String color;
+
     public Note(String title, String content) {
         this.title = title;
         this.content = content;

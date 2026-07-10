@@ -18,4 +18,7 @@ public class UpdateNoteRequest {
     @NotBlank(message = "Content cannot be empty")
     @Size(min = 5, message = "Content must contain at least 5 characters")
     private String content;
+
+    @Size(max = 20, message = "Color cannot exceed 20 characters")
+    private String color;
 }
