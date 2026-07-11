@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class NoteService {
@@ -26,31 +27,41 @@ public class NoteService {
     private final NoteRepository noteRepository;
     private final NoteMapper noteMapper;
     private final CurrentUserService currentUserService;
+    private final AuditService auditService;
 
     public NoteService(
                 NoteRepository noteRepository,
                 NoteMapper noteMapper,
-                CurrentUserService currentUserService) {
+                CurrentUserService currentUserService,
+                AuditService auditService) {
 
         this.noteRepository = noteRepository;
         this.noteMapper = noteMapper;
         this.currentUserService = currentUserService;
-        }
-        
-    public NoteResponse createNote(CreateNoteRequest request) {
-
-        User currentUser = currentUserService.getCurrentUser();
-        logger.info("Creating note for user: {}", currentUser.getEmail());
-        Note note = noteMapper.toEntity(request);
-        note.setUser(currentUser);
-        Note savedNote = noteRepository.save(note);
-        logger.info(
-                "Note created successfully. Note ID: {}, User: {}",
-                savedNote.getId(),
-                currentUser.getEmail());
-        return noteMapper.toResponse(savedNote);
+        this.auditService = auditService;
         }
 
+        @Transactional
+        public NoteResponse createNote(CreateNoteRequest request) {
+
+                User currentUser = currentUserService.getCurrentUser();
+
+                logger.info("Creating note for user: {}", currentUser.getEmail());
+                Note note = noteMapper.toEntity(request);
+                note.setUser(currentUser);
+                Note savedNote = noteRepository.save(note);
+                auditService.logEvent(
+                "Created Note",
+                        currentUser.getEmail()
+                );
+                logger.info(
+                        "Note created successfully. Note ID: {}, User: {}",
+                        savedNote.getId(),
+                        currentUser.getEmail());
+                return noteMapper.toResponse(savedNote);
+        }
+
+        @Transactional(readOnly = true)
     public Page<NoteResponse> getNotes(
                 int page,
                 int size,
@@ -72,6 +83,7 @@ public class NoteService {
 
 
 
+        @Transactional(readOnly = true)
     public Page<NoteResponse> searchNotes(
                 String keyword,
                 int page,
@@ -96,6 +108,7 @@ public class NoteService {
                 .map(noteMapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public NoteResponse getNoteById(Long id) {
         User currentUser=currentUserService.getCurrentUser();
         Note note=noteRepository
@@ -105,6 +118,7 @@ public class NoteService {
         return noteMapper.toResponse(note);
     }
 
+    @Transactional
     public NoteResponse updateNote(Long id, UpdateNoteRequest request) {
         User currentUser=currentUserService.getCurrentUser();
         Note note=noteRepository
@@ -114,6 +128,10 @@ public class NoteService {
         note.setTitle(request.getTitle());
         note.setContent(request.getContent());
         Note updatedNote = noteRepository.save(note);
+        auditService.logEvent(
+        "Updated Note",
+                currentUser.getEmail()
+        );
         logger.info(
                 "Note updated successfully. Note ID: {}, User: {}",
                 updatedNote.getId(),
@@ -121,6 +139,7 @@ public class NoteService {
         return noteMapper.toResponse(updatedNote);
     }
 
+    @Transactional
     public void deleteNote(Long id) {
         User currentUser = currentUserService.getCurrentUser();
         Note note = noteRepository
@@ -131,6 +150,28 @@ public class NoteService {
                 "Note deleted successfully. Note ID: {}, User: {}",
                 note.getId(),
                 currentUser.getEmail());
+        auditService.logEvent(
+        "Deleted Note",
+                currentUser.getEmail()
+        );
         noteRepository.delete(note);
     }
+
+
+
+    @Transactional
+        public void createNoteAndFail(CreateNoteRequest request) {
+
+                User currentUser = currentUserService.getCurrentUser();
+                Note note = noteMapper.toEntity(request);
+                note.setUser(currentUser);
+                noteRepository.save(note);
+                auditService.logEvent(
+                "Rollback Demo",
+                        currentUser.getEmail());
+                throw new RuntimeException(
+                "Intentional exception to demonstrate transaction rollback."
+                );
+        }
+
 }

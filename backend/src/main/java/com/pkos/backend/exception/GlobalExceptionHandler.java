@@ -68,4 +68,24 @@ public class GlobalExceptionHandler {
 
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
         }
+
+
+
+        @ExceptionHandler(Exception.class)
+        public ResponseEntity<ErrorResponse> handleGeneralException(Exception exception) {
+                logger.error(
+                        "Unexpected server error.",
+                        exception
+                );
+                ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+            "   An unexpected internal server error occurred.",
+                null
+                );
+                return new ResponseEntity<>(
+                        response,
+                        HttpStatus.INTERNAL_SERVER_ERROR
+                );
+}
 }

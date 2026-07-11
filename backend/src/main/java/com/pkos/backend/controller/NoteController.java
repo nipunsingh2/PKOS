@@ -89,4 +89,12 @@ public class NoteController {
 
         return ResponseEntity.noContent().build();
     }
+
+
+    @PostMapping("/rollback-demo")
+    public ResponseEntity<Void> rollbackDemo(
+            @Valid @RequestBody CreateNoteRequest request) {
+        noteService.createNoteAndFail(request);
+        return ResponseEntity.ok().build();
+    }
 }
