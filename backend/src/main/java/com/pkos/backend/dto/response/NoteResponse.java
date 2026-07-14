@@ -22,5 +22,4 @@ public class NoteResponse {
     private LocalDateTime updatedAt;
 
     private String color;
-
 }

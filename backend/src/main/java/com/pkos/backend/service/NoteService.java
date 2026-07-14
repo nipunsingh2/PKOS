@@ -18,6 +18,10 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+
+
 
 @Service
 public class NoteService {
@@ -109,6 +113,7 @@ public class NoteService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "notes", key = "#id")
     public NoteResponse getNoteById(Long id) {
         User currentUser=currentUserService.getCurrentUser();
         Note note=noteRepository
@@ -119,6 +124,7 @@ public class NoteService {
     }
 
     @Transactional
+    @CacheEvict(value = "notes", key = "#id")
     public NoteResponse updateNote(Long id, UpdateNoteRequest request) {
         User currentUser=currentUserService.getCurrentUser();
         Note note=noteRepository
@@ -140,6 +146,7 @@ public class NoteService {
     }
 
     @Transactional
+    @CacheEvict(value = "notes", key = "#id")
     public void deleteNote(Long id) {
         User currentUser = currentUserService.getCurrentUser();
         Note note = noteRepository
