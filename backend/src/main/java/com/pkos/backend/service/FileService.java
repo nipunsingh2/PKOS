@@ -3,6 +3,7 @@ package com.pkos.backend.service;
 import com.pkos.backend.dto.response.FileResponse;
 import com.pkos.backend.entity.FileMetadata;
 import com.pkos.backend.entity.User;
+import com.pkos.backend.exception.ResourceNotFoundException;
 import com.pkos.backend.repository.FileMetadataRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import java.net.MalformedURLException;
 
 @Service
 @RequiredArgsConstructor
@@ -79,6 +83,28 @@ public class FileService {
             .downloadUrl("/api/files/" + savedFile.getId())
             .build();
     }
+    
+        @Transactional(readOnly = true)
+        public Resource downloadFile(Long id)
+        throws MalformedURLException {
+                User currentUser = currentUserService.getCurrentUser();
+                FileMetadata fileMetadata = fileMetadataRepository
+            .findByIdAndUser(id, currentUser)
+            .orElseThrow(() ->
+                    new ResourceNotFoundException(
+                            "File not found"));
+
+    Path filePath = Paths.get(fileMetadata.getStoragePath());
+
+    Resource resource = new UrlResource(filePath.toUri());
+
+    if (!resource.exists() || !resource.isReadable()) {
+        throw new ResourceNotFoundException("File not found.");
+    }
+
+    return resource;
+}
+
     private void validateFile(MultipartFile file) {
 
         if (file.isEmpty()) {
