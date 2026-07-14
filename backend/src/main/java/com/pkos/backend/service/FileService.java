@@ -1,5 +1,7 @@
 package com.pkos.backend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.pkos.backend.dto.response.FileResponse;
 import com.pkos.backend.entity.FileMetadata;
 import com.pkos.backend.entity.User;
@@ -17,6 +19,12 @@ import java.nio.file.Paths;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import java.net.MalformedURLException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +38,9 @@ public class FileService {
     private final AuditService auditService;
 
     private static final String UPLOAD_DIR = "uploads";
+
+    private static final Logger logger =
+        LoggerFactory.getLogger(FileService.class);
 
     public FileResponse uploadFile(
         MultipartFile file) throws IOException {
@@ -104,6 +115,68 @@ public class FileService {
 
     return resource;
 }
+    @Transactional
+    public void deleteFile(Long id) throws IOException {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        FileMetadata fileMetadata = fileMetadataRepository
+                .findByIdAndUser(id, currentUser)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("File not found."));
+
+        Path filePath = Paths.get(fileMetadata.getStoragePath());
+
+        if (!Files.deleteIfExists(filePath)) {
+            logger.warn(
+                    "Physical file already missing: {}",
+                    fileMetadata.getStoragePath()
+            );
+        }
+
+        fileMetadataRepository.delete(fileMetadata);
+
+        auditService.logEvent(
+                "Deleted File",
+                currentUser.getEmail()
+        );
+
+        logger.info(
+                "File deleted successfully. File ID: {}, User: {}",
+                fileMetadata.getId(),
+                currentUser.getEmail()
+        );
+    }
+
+
+
+
+    @Transactional(readOnly = true)
+    public Page<FileResponse> getFiles(
+            int page,
+            int size,
+            String sortBy,
+            String direction) {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return fileMetadataRepository
+                .findByUser(currentUser, pageable)
+                .map(file -> FileResponse.builder()
+                        .id(file.getId())
+                        .fileName(file.getFileName())
+                        .contentType(file.getContentType())
+                        .fileSize(file.getFileSize())
+                        .uploadedAt(file.getUploadedAt())
+                        .downloadUrl("/api/files/" + file.getId())
+                        .build());
+    }
 
     private void validateFile(MultipartFile file) {
 
