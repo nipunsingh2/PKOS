@@ -29,7 +29,7 @@ public class FileService {
 
     public FileResponse uploadFile(
         MultipartFile file) throws IOException {
-
+    validateFile(file);
     User currentUser = currentUserService.getCurrentUser();
 
     Path uploadPath = Paths.get(UPLOAD_DIR);
@@ -78,6 +78,26 @@ public class FileService {
             .uploadedAt(savedFile.getUploadedAt())
             .downloadUrl("/api/files/" + savedFile.getId())
             .build();
-}
+    }
+    private void validateFile(MultipartFile file) {
+
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "File cannot be empty.");
+        }
+
+        String contentType = file.getContentType();
+
+        if (contentType == null ||
+                !(contentType.equals("application/pdf")
+                        || contentType.equals("image/png")
+                        || contentType.equals("image/jpeg")
+                        || contentType.equals("text/plain"))) {
+
+            throw new IllegalArgumentException(
+                    "Unsupported file type.");
+        }
+    }
+
 
 }

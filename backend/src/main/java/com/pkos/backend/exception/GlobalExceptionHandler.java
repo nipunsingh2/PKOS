@@ -1,5 +1,6 @@
 package com.pkos.backend.exception;
 
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import com.pkos.backend.dto.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -87,5 +88,39 @@ public class GlobalExceptionHandler {
                         response,
                         HttpStatus.INTERNAL_SERVER_ERROR
                 );
-}
+        }
+        @ExceptionHandler(IllegalArgumentException.class)
+        public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+                        IllegalArgumentException exception) {
+                logger.warn("Invalid file upload: {}", exception.getMessage());
+                ErrorResponse response = new ErrorResponse(
+                        LocalDateTime.now(),
+                        HttpStatus.BAD_REQUEST.value(),
+                        exception.getMessage(),
+                null
+                );
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.BAD_REQUEST
+        );
+        }
+
+        @ExceptionHandler(MaxUploadSizeExceededException.class)
+        public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceededException(
+                MaxUploadSizeExceededException exception) {
+
+        logger.warn("File exceeds maximum upload size.");
+
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.PAYLOAD_TOO_LARGE.value(),
+                "Maximum allowed file size is 10 MB.",
+                null
+        );
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.PAYLOAD_TOO_LARGE
+        );
+        }
 }
