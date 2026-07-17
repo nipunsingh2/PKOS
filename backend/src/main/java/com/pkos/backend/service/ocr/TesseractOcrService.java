@@ -33,6 +33,10 @@ public class TesseractOcrService implements OcrService {
         tesseract.setDatapath(properties.getDatapath());
         tesseract.setLanguage(properties.getLanguage());
 
+        // OCR configuration
+        tesseract.setPageSegMode(6);   // Assume a single block of text
+        tesseract.setOcrEngineMode(1); // LSTM neural network engine
+
         try {
             return tesseract.doOCR(imagePath.toFile()).trim();
         } catch (TesseractException e) {

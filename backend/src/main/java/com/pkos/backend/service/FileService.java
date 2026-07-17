@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.pkos.backend.dto.response.FileResponse;
 import com.pkos.backend.entity.FileMetadata;
+import com.pkos.backend.entity.SupportedFileType;
 import com.pkos.backend.entity.User;
 import com.pkos.backend.exception.ResourceNotFoundException;
 import com.pkos.backend.repository.FileMetadataRepository;
@@ -23,6 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import com.pkos.backend.service.content.FileContentService;
 
 
 
@@ -38,6 +40,8 @@ public class FileService {
     private final AuditService auditService;
 
     private static final String UPLOAD_DIR = "uploads";
+
+    private final FileContentService fileContentService;
 
     private static final Logger logger =
         LoggerFactory.getLogger(FileService.class);
@@ -79,6 +83,7 @@ public class FileService {
             .build();
 
     FileMetadata savedFile = fileMetadataRepository.save(fileMetadata);
+    fileContentService.process(savedFile);
 
     auditService.logEvent(
             "Uploaded File",
@@ -187,14 +192,8 @@ public class FileService {
 
         String contentType = file.getContentType();
 
-        if (contentType == null ||
-                !(contentType.equals("application/pdf")
-                        || contentType.equals("image/png")
-                        || contentType.equals("image/jpeg")
-                        || contentType.equals("text/plain"))) {
-
-            throw new IllegalArgumentException(
-                    "Unsupported file type.");
+        if (SupportedFileType.from(contentType) == SupportedFileType.UNKNOWN) {
+                throw new IllegalArgumentException("Unsupported file type.");
         }
     }
 

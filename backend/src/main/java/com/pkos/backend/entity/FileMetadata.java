@@ -41,4 +41,21 @@ public class FileMetadata {
     public void onCreate() {
         uploadedAt = LocalDateTime.now();
     }
+
+    @OneToOne(
+            mappedBy = "fileMetadata",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private FileContent fileContent;
+
+    public void setFileContent(FileContent fileContent) {
+
+        this.fileContent = fileContent;
+
+        if (fileContent != null) {
+            fileContent.setFileMetadata(this);
+        }
+    }
 }   
+

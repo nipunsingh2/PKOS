@@ -1,0 +1,116 @@
+package com.pkos.backend.service.content;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.pkos.backend.entity.ExtractionType;
+import com.pkos.backend.entity.FileContent;
+import com.pkos.backend.entity.FileMetadata;
+import com.pkos.backend.entity.SupportedFileType;
+import com.pkos.backend.repository.FileContentRepository;
+import com.pkos.backend.service.ocr.OcrService;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class FileContentService {
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(FileContentService.class);
+
+    private final OcrService ocrService;
+    private final FileContentRepository fileContentRepository;
+
+    public void process(FileMetadata fileMetadata) {
+
+        try {
+
+            SupportedFileType fileType =
+                    SupportedFileType.from(fileMetadata.getContentType());
+
+            switch (fileType) {
+
+                case IMAGE -> saveContent(
+                        fileMetadata,
+                        extractImageContent(fileMetadata),
+                        ExtractionType.OCR
+                );
+
+                case TEXT -> saveContent(
+                        fileMetadata,
+                        extractTextContent(fileMetadata),
+                        ExtractionType.PLAIN_TEXT
+                );
+
+                case PDF -> logger.info(
+                        "PDF extraction is not implemented yet for file '{}'",
+                        fileMetadata.getFileName()
+                );
+
+                case UNKNOWN -> logger.warn(
+                        "Skipping unsupported file type '{}' for file '{}'",
+                        fileMetadata.getContentType(),
+                        fileMetadata.getFileName()
+                );
+            }
+
+        } catch (Exception ex) {
+
+            logger.error(
+                    "Content extraction failed for file '{}'",
+                    fileMetadata.getFileName(),
+                    ex
+            );
+        }
+    }
+
+    private String extractImageContent(FileMetadata fileMetadata) {
+
+        return ocrService.extractText(
+                Path.of(fileMetadata.getStoragePath())
+        );
+    }
+
+    private String extractTextContent(FileMetadata fileMetadata)
+            throws IOException {
+
+        return Files.readString(
+                Path.of(fileMetadata.getStoragePath())
+        );
+    }
+
+    private void saveContent(
+            FileMetadata fileMetadata,
+            String content,
+            ExtractionType extractionType) {
+
+        if (content == null || content.isBlank()) {
+            logger.warn(
+                    "No content extracted from file '{}'",
+                    fileMetadata.getFileName()
+            );
+            return;
+        }
+
+        FileContent fileContent = FileContent.builder()
+                .content(content)
+                .extractionType(extractionType)
+                .build();
+
+        fileMetadata.setFileContent(fileContent);
+
+        fileContentRepository.save(fileContent);
+        logger.info(
+                "Content extracted successfully for file '{}'",
+                fileMetadata.getFileName()
+        );
+    }
+}
