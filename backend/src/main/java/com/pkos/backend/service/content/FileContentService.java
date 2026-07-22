@@ -51,11 +51,26 @@ public class FileContentService {
                         ExtractionType.PLAIN_TEXT
                 );
 
-                case PDF -> saveContent(
-                        fileMetadata,
-                        extractPdfContent(fileMetadata),
-                        ExtractionType.PDF_TEXT
-                );
+                case PDF -> {
+                        String pdfText = extractPdfContent(fileMetadata);
+                        if (hasMeaningfulText(pdfText)) {
+                                saveContent(
+                                        fileMetadata,
+                                        pdfText,
+                                        ExtractionType.PDF_TEXT
+                                );
+                        } else {
+                                logger.info(
+                                        "No embedded text found in '{}'. Falling back to OCR.",
+                                        fileMetadata.getFileName()
+                                );
+                                saveContent(
+                                        fileMetadata,
+                                        extractScannedPdfContent(fileMetadata),
+                                        ExtractionType.OCR
+                                );
+                        }
+                        }
 
                 case UNKNOWN -> logger.warn(
                         "Skipping unsupported file type '{}' for file '{}'",
@@ -122,4 +137,31 @@ public class FileContentService {
                 fileMetadata.getFileName()
         );
     }
+
+        private boolean hasMeaningfulText(String text) {
+
+        return text != null
+                && !text.isBlank()
+                && text.trim().length() >= 10;
+        }
+
+        private String extractScannedPdfContent(FileMetadata fileMetadata) {
+
+        StringBuilder extractedText = new StringBuilder();
+
+        pdfTextExtractionService
+                .renderPages(Path.of(fileMetadata.getStoragePath()))
+                .forEach(page -> {
+
+                        extractedText.append(
+                                ocrService.extractText(page)
+                        );
+
+                        extractedText.append(System.lineSeparator());
+                        extractedText.append(System.lineSeparator());
+
+                });
+
+        return extractedText.toString().trim();
+        }
 }

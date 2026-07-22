@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import org.springframework.stereotype.Service;
 
 import com.pkos.backend.config.OcrProperties;
-
+import java.awt.image.BufferedImage;
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
@@ -37,6 +37,35 @@ public class TesseractOcrService implements OcrService {
             return tesseract.doOCR(imagePath.toFile()).trim();
         } catch (TesseractException e) {
             throw new RuntimeException("Failed to perform OCR.", e);
+        }
+    }
+
+    @Override
+    public String extractText(BufferedImage image) {
+
+        if (image == null) {
+            throw new IllegalArgumentException("Image cannot be null.");
+        }
+
+        ITesseract tesseract = new Tesseract();
+
+        tesseract.setDatapath(properties.getDatapath());
+        tesseract.setLanguage(properties.getLanguage());
+
+        // OCR configuration
+        tesseract.setPageSegMode(6);
+        tesseract.setOcrEngineMode(1);
+
+        try {
+
+            return tesseract.doOCR(image).trim();
+
+        } catch (TesseractException e) {
+
+            throw new RuntimeException(
+                    "Failed to perform OCR.",
+                    e
+            );
         }
     }
 }
