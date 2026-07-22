@@ -45,7 +45,8 @@ public class FileMetadata {
     @OneToOne(
             mappedBy = "fileMetadata",
             cascade = CascadeType.ALL,
-            orphanRemoval = true
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
     )
     private FileContent fileContent;
 

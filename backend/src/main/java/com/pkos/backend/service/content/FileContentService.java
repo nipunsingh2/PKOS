@@ -15,7 +15,7 @@ import com.pkos.backend.entity.FileMetadata;
 import com.pkos.backend.entity.SupportedFileType;
 import com.pkos.backend.repository.FileContentRepository;
 import com.pkos.backend.service.ocr.OcrService;
-
+import com.pkos.backend.service.pdf.PdfTextExtractionService;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -27,6 +27,7 @@ public class FileContentService {
             LoggerFactory.getLogger(FileContentService.class);
 
     private final OcrService ocrService;
+    private final PdfTextExtractionService pdfTextExtractionService;
     private final FileContentRepository fileContentRepository;
 
     public void process(FileMetadata fileMetadata) {
@@ -50,9 +51,10 @@ public class FileContentService {
                         ExtractionType.PLAIN_TEXT
                 );
 
-                case PDF -> logger.info(
-                        "PDF extraction is not implemented yet for file '{}'",
-                        fileMetadata.getFileName()
+                case PDF -> saveContent(
+                        fileMetadata,
+                        extractPdfContent(fileMetadata),
+                        ExtractionType.PDF_TEXT
                 );
 
                 case UNKNOWN -> logger.warn(
@@ -86,6 +88,13 @@ public class FileContentService {
                 Path.of(fileMetadata.getStoragePath())
         );
     }
+
+        private String extractPdfContent(FileMetadata fileMetadata) {
+
+        return pdfTextExtractionService.extractText(
+                Path.of(fileMetadata.getStoragePath())
+        );
+        } 
 
     private void saveContent(
             FileMetadata fileMetadata,

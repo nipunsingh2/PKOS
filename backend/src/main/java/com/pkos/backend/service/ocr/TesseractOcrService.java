@@ -27,16 +27,12 @@ public class TesseractOcrService implements OcrService {
         if (!Files.exists(imagePath)) {
             throw new IllegalArgumentException("File does not exist: " + imagePath);
         }
-
         ITesseract tesseract = new Tesseract();
-
         tesseract.setDatapath(properties.getDatapath());
         tesseract.setLanguage(properties.getLanguage());
-
         // OCR configuration
         tesseract.setPageSegMode(6);   // Assume a single block of text
         tesseract.setOcrEngineMode(1); // LSTM neural network engine
-
         try {
             return tesseract.doOCR(imagePath.toFile()).trim();
         } catch (TesseractException e) {
