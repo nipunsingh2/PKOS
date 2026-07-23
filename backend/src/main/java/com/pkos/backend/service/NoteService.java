@@ -109,7 +109,17 @@ public class NoteService {
                 .map(noteMapper::toResponse);
         }
 
+        @Transactional(readOnly = true)
+        public List<NoteResponse> getPinnedNotes() {
 
+        User currentUser = currentUserService.getCurrentUser();
+
+        return noteRepository
+                .findByUserAndDeletedFalseAndPinnedTrue(currentUser)
+                .stream()
+                .map(noteMapper::toResponse)
+                .toList();
+        }
 
         @Transactional(readOnly = true)
     public Page<NoteResponse> searchNotes(
@@ -199,6 +209,59 @@ public class NoteService {
                 currentUser.getEmail());
         return noteMapper.toResponse(updatedNote);
     }
+
+        @Transactional
+        @CacheEvict(value = "notes", key = "#id")
+        public NoteResponse pinNote(Long id) {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        Note note = findOwnedNote(id, currentUser);
+
+        note.setPinned(true);
+
+        Note pinnedNote = noteRepository.save(note);
+
+        auditService.logEvent(
+                "Pinned Note",
+                currentUser.getEmail()
+        );
+
+        logger.info(
+                "Note pinned successfully. Note ID: {}, User: {}",
+                pinnedNote.getId(),
+                currentUser.getEmail()
+        );
+
+        return noteMapper.toResponse(pinnedNote);
+        }
+
+        @Transactional
+        @CacheEvict(value = "notes", key = "#id")
+        public NoteResponse unpinNote(Long id) {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        Note note = findOwnedNote(id, currentUser);
+
+        note.setPinned(false);
+
+        Note unpinnedNote = noteRepository.save(note);
+
+        auditService.logEvent(
+                "Unpinned Note",
+                currentUser.getEmail()
+        );
+
+        logger.info(
+                "Note unpinned successfully. Note ID: {}, User: {}",
+                unpinnedNote.getId(),
+                currentUser.getEmail()
+        );
+
+        return noteMapper.toResponse(unpinnedNote);
+        }
+
 
         @Transactional
         @CacheEvict(value = "notes", key = "#id")

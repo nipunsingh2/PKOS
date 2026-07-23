@@ -47,6 +47,10 @@ public class Note {
 
     @Column(length = 20)
     private String color;
+
+    @Column(nullable = false)
+    private boolean pinned = false;
+
     @Column(nullable = false)
     private boolean deleted = false;
 

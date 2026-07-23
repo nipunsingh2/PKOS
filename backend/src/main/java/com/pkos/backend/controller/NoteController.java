@@ -45,6 +45,14 @@ public class NoteController {
         );
     }
 
+        @GetMapping("/pinned")
+        public ResponseEntity<List<NoteResponse>> getPinnedNotes() {
+
+        return ResponseEntity.ok(
+                noteService.getPinnedNotes()
+        );
+        }
+
     @GetMapping("/search")
     public ResponseEntity<Page<NoteResponse>> searchNotes(
             @RequestParam String keyword,
@@ -82,6 +90,24 @@ public class NoteController {
                 noteService.updateNote(id, request)
         );
     }
+
+        @PutMapping("/{id}/pin")
+        public ResponseEntity<NoteResponse> pinNote(
+                @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                noteService.pinNote(id)
+        );
+        } 
+
+        @PutMapping("/{id}/unpin")
+        public ResponseEntity<NoteResponse> unpinNote(
+                @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                noteService.unpinNote(id)
+        );
+        }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteNote(

@@ -24,5 +24,7 @@ public class NoteResponse {
 
     private String color;
 
+    private boolean pinned;
+
     private Set<TagResponse> tags;
 }

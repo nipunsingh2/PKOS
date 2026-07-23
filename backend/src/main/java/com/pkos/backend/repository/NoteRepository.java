@@ -50,6 +50,8 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
             Pageable pageable
     );
 
+    List<Note> findByUserAndDeletedFalseAndPinnedTrue(User user);
+
     Page<Note> findByUserAndDeletedTrue(
             User user,
             Pageable pageable
