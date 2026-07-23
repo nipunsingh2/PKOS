@@ -41,9 +41,16 @@ public class Note {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "notebook_id", nullable = false)
+    private Notebook notebook;
+
     @Column(length = 20)
     private String color;
+    @Column(nullable = false)
+    private boolean deleted = false;
 
+    private LocalDateTime deletedAt;
     @ManyToMany
     @JoinTable(
             name = "note_tags",

@@ -92,6 +92,42 @@ public class NoteController {
         return ResponseEntity.noContent().build();
     }
 
+        @GetMapping("/trash")
+        public ResponseEntity<Page<NoteResponse>> getTrashedNotes(
+                @RequestParam(defaultValue = "0") int page,
+                @RequestParam(defaultValue = "10") int size,
+                @RequestParam(defaultValue = "deletedAt") String sortBy,
+                @RequestParam(defaultValue = "desc") String direction) {
+
+        return ResponseEntity.ok(
+                noteService.getTrashedNotes(
+                        page,
+                        size,
+                        sortBy,
+                        direction
+                )
+        );
+        }
+
+        @PutMapping("/trash/{id}/restore")
+        public ResponseEntity<NoteResponse> restoreNote(
+                @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                noteService.restoreNote(id)
+        );
+        }
+
+        @DeleteMapping("/trash/{id}")
+        public ResponseEntity<Void> permanentlyDeleteNote(
+                @PathVariable Long id) {
+
+        noteService.permanentlyDeleteNote(id);
+
+        return ResponseEntity.noContent().build();
+        }
+
+
         @PostMapping("/{noteId}/tags/{tagId}")
         public ResponseEntity<NoteResponse> addTagToNote(
                 @PathVariable Long noteId,

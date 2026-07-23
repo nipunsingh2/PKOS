@@ -18,6 +18,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.pkos.backend.entity.Notebook;
+import com.pkos.backend.repository.NotebookRepository;
+import com.pkos.backend.util.AppConstants;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final NotebookRepository notebookRepository;
 
     @Transactional
     public void register(RegisterRequest request) {
@@ -40,7 +44,9 @@ public class AuthService {
 
         User user = buildUser(request);
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        createDefaultNotebook(savedUser);
 
         logger.info("User registered successfully with email: {}", request.getEmail());
     }
@@ -81,6 +87,22 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .build();
+    }
+
+    private void createDefaultNotebook(User user) {
+
+        Notebook inbox = Notebook.builder()
+                .name(AppConstants.DEFAULT_NOTEBOOK_NAME)
+                .user(user)
+                .build();
+
+        notebookRepository.save(inbox);
+
+        logger.info(
+                "Default notebook '{}' created for user: {}",
+                AppConstants.DEFAULT_NOTEBOOK_NAME,
+                user.getEmail()
+        );
     }
 
     private void authenticate(LoginRequest request) {

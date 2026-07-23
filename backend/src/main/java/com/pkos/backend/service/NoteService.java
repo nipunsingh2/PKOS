@@ -22,7 +22,9 @@ import com.pkos.backend.dto.response.TagResponse;
 import com.pkos.backend.entity.Tag;
 import com.pkos.backend.mapper.TagMapper;
 import com.pkos.backend.repository.TagRepository;
-
+import com.pkos.backend.entity.Notebook;
+import com.pkos.backend.repository.NotebookRepository;
+import com.pkos.backend.util.AppConstants;
 import java.util.List;
 
 
@@ -37,14 +39,15 @@ public class NoteService {
     private final AuditService auditService;
     private final TagRepository tagRepository;
     private final TagMapper tagMapper;
-
+    private final NotebookRepository notebookRepository;
     public NoteService(
                 NoteRepository noteRepository,
                 NoteMapper noteMapper,
                 CurrentUserService currentUserService,
                 AuditService auditService,
                 TagRepository tagRepository,
-                TagMapper tagMapper) {
+                TagMapper tagMapper,
+                NotebookRepository notebookRepository) {
 
         this.noteRepository = noteRepository;
         this.noteMapper = noteMapper;
@@ -52,6 +55,7 @@ public class NoteService {
         this.auditService = auditService;
         this.tagRepository = tagRepository;
         this.tagMapper = tagMapper;
+        this.notebookRepository = notebookRepository;
         }
 
         @Transactional
@@ -61,8 +65,16 @@ public class NoteService {
 
                 logger.info("Creating note for user: {}", currentUser.getEmail());
                 Note note = noteMapper.toEntity(request);
+
                 note.setUser(currentUser);
-                Note savedNote = noteRepository.save(note);
+
+                Notebook inbox =
+                        findInboxNotebook(currentUser);
+
+                note.setNotebook(inbox);
+
+                Note savedNote =
+                        noteRepository.save(note);
                 auditService.logEvent(
                 "Created Note",
                         currentUser.getEmail()
@@ -90,7 +102,10 @@ public class NoteService {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return noteRepository
-                .findByUser(currentUser, pageable)
+                .findByUserAndDeletedFalse(
+                        currentUser,
+                        pageable
+                )
                 .map(noteMapper::toResponse);
         }
 
@@ -121,23 +136,53 @@ public class NoteService {
                 .map(noteMapper::toResponse);
     }
 
+        @Transactional(readOnly = true)
+        public Page<NoteResponse> getTrashedNotes(
+                int page,
+                int size,
+                String sortBy,
+                String direction) {
+
+        User currentUser =
+                currentUserService.getCurrentUser();
+
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        Pageable pageable =
+                PageRequest.of(page, size, sort);
+
+        return noteRepository
+                .findByUserAndDeletedTrue(
+                        currentUser,
+                        pageable
+                )
+                .map(noteMapper::toResponse);
+        }
+
     @Transactional(readOnly = true)
     @Cacheable(value = "notes", key = "#id")
     public NoteResponse getNoteById(Long id) {
         User currentUser=currentUserService.getCurrentUser();
         Note note=noteRepository
-                .findByIdAndUser(id,currentUser)
+                .findByIdAndUserAndDeletedFalse(
+                        id,
+                        currentUser
+                )
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Note not found"));
         return noteMapper.toResponse(note);
     }
-
     @Transactional
     @CacheEvict(value = "notes", key = "#id")
     public NoteResponse updateNote(Long id, UpdateNoteRequest request) {
         User currentUser=currentUserService.getCurrentUser();
         Note note=noteRepository
-                .findByIdAndUser(id,currentUser)
+                .findByIdAndUserAndDeletedFalse(
+                        id,
+                        currentUser
+                )
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Note not found" + id));
         note.setTitle(request.getTitle());
@@ -159,9 +204,82 @@ public class NoteService {
         @CacheEvict(value = "notes", key = "#id")
         public void deleteNote(Long id) {
 
-        User currentUser = currentUserService.getCurrentUser();
+        User currentUser =
+                currentUserService.getCurrentUser();
 
-        Note note = findOwnedNote(id, currentUser);
+        Note note =
+                findOwnedNote(id, currentUser);
+
+        note.setDeleted(true);
+        note.setDeletedAt(java.time.LocalDateTime.now());
+
+        noteRepository.save(note);
+
+        auditService.logEvent(
+                "Moved Note To Trash",
+                currentUser.getEmail()
+        );
+
+        logger.info(
+                "Note moved to Trash. Note ID: {}, User: {}",
+                note.getId(),
+                currentUser.getEmail()
+        );
+        }
+
+        @Transactional
+        @CacheEvict(value = "notes", key = "#id")
+        public NoteResponse restoreNote(Long id) {
+
+        User currentUser =
+                currentUserService.getCurrentUser();
+
+        Note note = noteRepository
+                .findByIdAndUserAndDeletedTrue(
+                        id,
+                        currentUser
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Note not found."
+                        ));
+
+        note.setDeleted(false);
+        note.setDeletedAt(null);
+
+        Note restoredNote =
+                noteRepository.save(note);
+
+        auditService.logEvent(
+                "Restored Note",
+                currentUser.getEmail()
+        );
+
+        logger.info(
+                "Note restored successfully. Note ID: {}, User: {}",
+                restoredNote.getId(),
+                currentUser.getEmail()
+        );
+
+        return noteMapper.toResponse(restoredNote);
+        }
+
+        @Transactional
+        @CacheEvict(value = "notes", key = "#id")
+        public void permanentlyDeleteNote(Long id) {
+
+        User currentUser =
+                currentUserService.getCurrentUser();
+
+        Note note = noteRepository
+                .findByIdAndUserAndDeletedTrue(
+                        id,
+                        currentUser
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Note not found."
+                        ));
 
         for (Tag tag : note.getTags()) {
                 tag.getNotes().remove(note);
@@ -169,18 +287,18 @@ public class NoteService {
 
         note.getTags().clear();
 
+        noteRepository.delete(note);
+
+        auditService.logEvent(
+                "Permanently Deleted Note",
+                currentUser.getEmail()
+        );
+
         logger.info(
-                "Note deleted successfully. Note ID: {}, User: {}",
+                "Note permanently deleted. Note ID: {}, User: {}",
                 note.getId(),
                 currentUser.getEmail()
         );
-
-        auditService.logEvent(
-                "Deleted Note",
-                currentUser.getEmail()
-        );
-
-        noteRepository.delete(note);
         }
 
         @Transactional
@@ -222,6 +340,9 @@ public class NoteService {
                 User currentUser = currentUserService.getCurrentUser();
                 Note note = noteMapper.toEntity(request);
                 note.setUser(currentUser);
+                Notebook inbox =
+                        findInboxNotebook(currentUser);
+                note.setNotebook(inbox);
                 noteRepository.save(note);
                 auditService.logEvent(
                 "Rollback Demo",
@@ -276,9 +397,25 @@ public class NoteService {
 
         private Note findOwnedNote(Long noteId, User user) {
 
-        return noteRepository.findByIdAndUser(noteId, user)
+        return noteRepository.findByIdAndUserAndDeletedFalse(
+                        noteId,
+                        user
+                )
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Note not found."));
+        }
+
+        private Notebook findInboxNotebook(User user) {
+
+        return notebookRepository
+                .findByUserAndName(
+                        user,
+                        AppConstants.DEFAULT_NOTEBOOK_NAME
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Default Inbox notebook not found."
+                        ));
         }
 
         private Tag findOwnedTag(Long tagId, User user) {
@@ -287,4 +424,5 @@ public class NoteService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Tag not found."));
         }
+
 }
