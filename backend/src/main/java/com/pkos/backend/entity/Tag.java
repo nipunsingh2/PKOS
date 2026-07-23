@@ -1,9 +1,7 @@
 package com.pkos.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -11,23 +9,29 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+@Entity
+@Table(
+        name = "tags",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_tag_name_user",
+                        columnNames = {"name", "user_id"}
+                )
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
-
-@Entity
-@Table(name = "notes")
-public class Note {
+@AllArgsConstructor
+@Builder
+public class Tag {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 200)
-    private String title;
-
-    @Column(nullable = false)
-    private String content;
+    @Column(nullable = false, length = 50)
+    private String name;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
@@ -41,19 +45,7 @@ public class Note {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(length = 20)
-    private String color;
-
-    @ManyToMany
-    @JoinTable(
-            name = "note_tags",
-            joinColumns = @JoinColumn(name = "note_id"),
-            inverseJoinColumns = @JoinColumn(name = "tag_id")
-    )
-    private Set<Tag> tags = new HashSet<>();
-
-    public Note(String title, String content) {
-        this.title = title;
-        this.content = content;
-    }
+    @Builder.Default
+    @ManyToMany(mappedBy = "tags")
+    private Set<Note> notes = new HashSet<>();
 }

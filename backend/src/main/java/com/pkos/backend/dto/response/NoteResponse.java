@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -22,4 +23,6 @@ public class NoteResponse {
     private LocalDateTime updatedAt;
 
     private String color;
+
+    private Set<TagResponse> tags;
 }

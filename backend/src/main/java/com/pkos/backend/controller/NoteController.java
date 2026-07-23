@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.pkos.backend.dto.response.TagResponse;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/notes")
@@ -90,6 +92,34 @@ public class NoteController {
         return ResponseEntity.noContent().build();
     }
 
+        @PostMapping("/{noteId}/tags/{tagId}")
+        public ResponseEntity<NoteResponse> addTagToNote(
+                @PathVariable Long noteId,
+                @PathVariable Long tagId) {
+
+        return ResponseEntity.ok(
+                noteService.addTagToNote(noteId, tagId)
+        );
+        }
+
+        @DeleteMapping("/{noteId}/tags/{tagId}")
+        public ResponseEntity<NoteResponse> removeTagFromNote(
+                @PathVariable Long noteId,
+                @PathVariable Long tagId) {
+
+        return ResponseEntity.ok(
+                noteService.removeTagFromNote(noteId, tagId)
+        );
+        }
+
+        @GetMapping("/{noteId}/tags")
+        public ResponseEntity<List<TagResponse>> getTagsOfNote(
+                @PathVariable Long noteId) {
+
+        return ResponseEntity.ok(
+                noteService.getTagsOfNote(noteId)
+        );
+        }
 
     @PostMapping("/rollback-demo")
     public ResponseEntity<Void> rollbackDemo(
