@@ -102,7 +102,7 @@ public class NoteService {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return noteRepository
-                .findByUserAndDeletedFalse(
+                .findByUserAndDeletedFalseAndArchivedFalse(
                         currentUser,
                         pageable
                 )
@@ -119,6 +119,29 @@ public class NoteService {
                 .stream()
                 .map(noteMapper::toResponse)
                 .toList();
+        }
+
+        @Transactional(readOnly = true)
+        public Page<NoteResponse> getArchivedNotes(
+                int page,
+                int size,
+                String sortBy,
+                String direction) {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return noteRepository
+                .findByUserAndDeletedFalseAndArchivedTrue(
+                        currentUser,
+                        pageable
+                )
+                .map(noteMapper::toResponse);
         }
 
         @Transactional(readOnly = true)
@@ -176,7 +199,7 @@ public class NoteService {
     public NoteResponse getNoteById(Long id) {
         User currentUser=currentUserService.getCurrentUser();
         Note note=noteRepository
-                .findByIdAndUserAndDeletedFalse(
+                .findByIdAndUserAndDeletedFalseAndArchivedFalse(
                         id,
                         currentUser
                 )
@@ -189,7 +212,7 @@ public class NoteService {
     public NoteResponse updateNote(Long id, UpdateNoteRequest request) {
         User currentUser=currentUserService.getCurrentUser();
         Note note=noteRepository
-                .findByIdAndUserAndDeletedFalse(
+                .findByIdAndUserAndDeletedFalseAndArchivedFalse(
                         id,
                         currentUser
                 )
@@ -262,6 +285,64 @@ public class NoteService {
         return noteMapper.toResponse(unpinnedNote);
         }
 
+        @Transactional
+        @CacheEvict(value = "notes", key = "#id")
+        public NoteResponse archiveNote(Long id) {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        Note note = findOwnedNote(id, currentUser);
+
+        note.setArchived(true);
+
+        Note archivedNote = noteRepository.save(note);
+
+        auditService.logEvent(
+                "Archived Note",
+                currentUser.getEmail()
+        );
+
+        logger.info(
+                "Note archived successfully. Note ID: {}, User: {}",
+                archivedNote.getId(),
+                currentUser.getEmail()
+        );
+
+        return noteMapper.toResponse(archivedNote);
+        }
+
+        @Transactional
+        @CacheEvict(value = "notes", key = "#id")
+        public NoteResponse unarchiveNote(Long id) {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        Note note = noteRepository
+                .findByIdAndUserAndDeletedFalseAndArchivedTrue(
+                        id,
+                        currentUser
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Note not found."));
+
+        note.setArchived(false);
+
+        Note unarchivedNote = noteRepository.save(note);
+
+        auditService.logEvent(
+                "Unarchived Note",
+                currentUser.getEmail()
+        );
+
+        logger.info(
+                "Note unarchived successfully. Note ID: {}, User: {}",
+                unarchivedNote.getId(),
+                currentUser.getEmail()
+        );
+
+        return noteMapper.toResponse(unarchivedNote);
+        }
+
 
         @Transactional
         @CacheEvict(value = "notes", key = "#id")
@@ -270,8 +351,13 @@ public class NoteService {
         User currentUser =
                 currentUserService.getCurrentUser();
 
-        Note note =
-                findOwnedNote(id, currentUser);
+        Note note = noteRepository
+                .findByIdAndUserAndDeletedFalse(
+                        id,
+                        currentUser
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Note not found."));
 
         note.setDeleted(true);
         note.setDeletedAt(java.time.LocalDateTime.now());
@@ -460,10 +546,10 @@ public class NoteService {
 
         private Note findOwnedNote(Long noteId, User user) {
 
-        return noteRepository.findByIdAndUserAndDeletedFalse(
-                        noteId,
-                        user
-                )
+        return noteRepository.findByIdAndUserAndDeletedFalseAndArchivedFalse(
+                noteId,
+                user
+        )
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Note not found."));
         }

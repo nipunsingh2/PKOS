@@ -26,5 +26,7 @@ public class NoteResponse {
 
     private boolean pinned;
 
+    private boolean archived;
+
     private Set<TagResponse> tags;
 }

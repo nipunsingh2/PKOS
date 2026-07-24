@@ -45,6 +45,23 @@ public class NoteController {
         );
     }
 
+        @GetMapping("/archived")
+        public ResponseEntity<Page<NoteResponse>> getArchivedNotes(
+                @RequestParam(defaultValue = "0") int page,
+                @RequestParam(defaultValue = "10") int size,
+                @RequestParam(defaultValue = "updatedAt") String sortBy,
+                @RequestParam(defaultValue = "desc") String direction) {
+
+        return ResponseEntity.ok(
+                noteService.getArchivedNotes(
+                        page,
+                        size,
+                        sortBy,
+                        direction
+                )
+        );
+        }
+
         @GetMapping("/pinned")
         public ResponseEntity<List<NoteResponse>> getPinnedNotes() {
 
@@ -108,6 +125,25 @@ public class NoteController {
                 noteService.unpinNote(id)
         );
         }
+
+        @PutMapping("/{id}/archive")
+        public ResponseEntity<NoteResponse> archiveNote(
+                @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                noteService.archiveNote(id)
+        );
+        }
+
+        @PutMapping("/{id}/unarchive")
+        public ResponseEntity<NoteResponse> unarchiveNote(
+                @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                noteService.unarchiveNote(id)
+        );
+        }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteNote(

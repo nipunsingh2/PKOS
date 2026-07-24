@@ -40,6 +40,7 @@ public class NoteMapper {
     response.setUpdatedAt(note.getUpdatedAt());
     response.setColor(note.getColor());
     response.setPinned(note.isPinned());
+    response.setArchived(note.isArchived());
 
     Set<TagResponse> tags = note.getTags() == null
         ? Set.of()

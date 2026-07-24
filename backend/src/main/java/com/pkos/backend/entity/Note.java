@@ -52,6 +52,9 @@ public class Note {
     private boolean pinned = false;
 
     @Column(nullable = false)
+    private boolean archived = false;
+
+    @Column(nullable = false)
     private boolean deleted = false;
 
     private LocalDateTime deletedAt;

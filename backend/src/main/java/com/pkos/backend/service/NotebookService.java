@@ -196,7 +196,7 @@ public class NotebookService {
                 findInboxNotebook(currentUser);
 
         List<Note> notes =
-                noteRepository.findAllByNotebookAndUserAndDeletedFalse(
+                noteRepository.findAllByNotebookAndUserAndDeletedFalseAndArchivedFalse(
 
                         notebook,
                         currentUser
@@ -242,7 +242,7 @@ public class NotebookService {
                 PageRequest.of(page, size, sort);
 
         return noteRepository
-                .findByNotebookAndUserAndDeletedFalse(
+                .findByNotebookAndUserAndDeletedFalseAndArchivedFalse(
                         notebook,
                         currentUser,
                         pageable
@@ -259,7 +259,7 @@ public class NotebookService {
                 currentUserService.getCurrentUser();
 
         Note note = noteRepository
-                .findByIdAndUserAndDeletedFalse(noteId, currentUser)
+                .findByIdAndUserAndDeletedFalseAndArchivedFalse(noteId, currentUser)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Note not found."

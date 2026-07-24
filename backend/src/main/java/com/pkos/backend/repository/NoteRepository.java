@@ -8,28 +8,34 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 import java.util.Optional;
 
 public interface NoteRepository extends JpaRepository<Note, Long> {
 
-    Page<Note> findByUserAndDeletedFalse(
+    Page<Note> findByUserAndDeletedFalseAndArchivedFalse(
             User user,
             Pageable pageable
     );
 
     Optional<Note> findByIdAndUserAndDeletedFalse(
+        Long id,
+        User user
+        );
+        
+    Optional<Note> findByIdAndUserAndDeletedFalseAndArchivedFalse(
             Long id,
             User user
     );
 
-    Page<Note> findByNotebookAndUserAndDeletedFalse(
+    Page<Note> findByNotebookAndUserAndDeletedFalseAndArchivedFalse(
             Notebook notebook,
             User user,
             Pageable pageable
     );
 
-    List<Note> findAllByNotebookAndUserAndDeletedFalse(
+    List<Note> findAllByNotebookAndUserAndDeletedFalseAndArchivedFalse(
             Notebook notebook,
             User user
     );
@@ -39,6 +45,7 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
         FROM Note n
         WHERE n.user = :user
         AND n.deleted = false
+        AND n.archived = false
         AND (
             LOWER(n.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
             OR LOWER(n.content) LIKE LOWER(CONCAT('%', :keyword, '%'))
@@ -50,7 +57,19 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
             Pageable pageable
     );
 
-    List<Note> findByUserAndDeletedFalseAndPinnedTrue(User user);
+    List<Note> findByUserAndDeletedFalseAndPinnedTrue(
+            User user
+    );
+
+    Page<Note> findByUserAndDeletedFalseAndArchivedTrue(
+            User user,
+            Pageable pageable
+    );
+
+    Optional<Note> findByIdAndUserAndDeletedFalseAndArchivedTrue(
+            Long id,
+            User user
+    );
 
     Page<Note> findByUserAndDeletedTrue(
             User user,
