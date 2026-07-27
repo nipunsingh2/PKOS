@@ -8,8 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
 import com.pkos.backend.entity.Reminder;
 import com.pkos.backend.repository.ReminderRepository;
+import com.pkos.backend.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,14 +23,15 @@ public class ReminderScheduler {
             LoggerFactory.getLogger(ReminderScheduler.class);
 
     private final ReminderRepository reminderRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     @Scheduled(cron = "0 * * * * *")
     public void checkDueReminders() {
 
-    List<Reminder> dueReminders =
-            reminderRepository.findByCompletedFalseAndNotifiedFalseAndRemindAtLessThanEqual(
-                    LocalDateTime.now());
+        List<Reminder> dueReminders =
+                reminderRepository.findByCompletedFalseAndNotifiedFalseAndRemindAtLessThanEqual(
+                        LocalDateTime.now());
 
         if (dueReminders.isEmpty()) {
             return;
@@ -50,8 +53,11 @@ public class ReminderScheduler {
                     reminder.getNote().getUser().getId(),
                     reminder.getNote().getId(),
                     reminder.getRemindAt());
-                    reminder.setNotified(true);
-                    reminderRepository.save(reminder);
+
+            notificationService.createReminderNotification(reminder);
+
+            reminder.setNotified(true);
+            reminderRepository.save(reminder);
         }
     }
 }
