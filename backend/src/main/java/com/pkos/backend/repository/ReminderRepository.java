@@ -22,9 +22,8 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
             User user
     );
 
-    List<Reminder> findByCompletedFalseAndRemindAtLessThanEqual(
-            LocalDateTime dateTime
-    );
+        List<Reminder> findByCompletedFalseAndNotifiedFalseAndRemindAtLessThanEqual(
+                LocalDateTime remindAt);
 
     List<Reminder> findByNoteUserAndCompletedFalseAndRemindAtBeforeOrderByRemindAtAsc(
             User user,

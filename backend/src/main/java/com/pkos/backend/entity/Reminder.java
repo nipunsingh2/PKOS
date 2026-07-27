@@ -26,6 +26,10 @@ public class Reminder {
     @Column(nullable = false)
     private boolean completed = false;
 
+    @Column(nullable = false)
+    // @org.hibernate.annotations.ColumnDefault("false")
+    private boolean notified = false;
+    
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -33,4 +37,5 @@ public class Reminder {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "note_id", nullable = false, unique = true)
     private Note note;
+
 }

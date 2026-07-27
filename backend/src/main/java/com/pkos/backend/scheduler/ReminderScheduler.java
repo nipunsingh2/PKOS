@@ -26,9 +26,9 @@ public class ReminderScheduler {
     @Scheduled(cron = "0 * * * * *")
     public void checkDueReminders() {
 
-        List<Reminder> dueReminders =
-                reminderRepository.findByCompletedFalseAndRemindAtLessThanEqual(
-                        LocalDateTime.now());
+    List<Reminder> dueReminders =
+            reminderRepository.findByCompletedFalseAndNotifiedFalseAndRemindAtLessThanEqual(
+                    LocalDateTime.now());
 
         if (dueReminders.isEmpty()) {
             return;
@@ -50,6 +50,8 @@ public class ReminderScheduler {
                     reminder.getNote().getUser().getId(),
                     reminder.getNote().getId(),
                     reminder.getRemindAt());
+                    reminder.setNotified(true);
+                    reminderRepository.save(reminder);
         }
     }
 }
