@@ -58,6 +58,15 @@ public class Note {
     private boolean deleted = false;
 
     private LocalDateTime deletedAt;
+
+    @OneToOne(
+            mappedBy = "note",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private Reminder reminder;
+
     @ManyToMany
     @JoinTable(
             name = "note_tags",

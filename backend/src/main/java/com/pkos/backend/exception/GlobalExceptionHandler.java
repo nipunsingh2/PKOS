@@ -123,4 +123,14 @@ public class GlobalExceptionHandler {
                 HttpStatus.PAYLOAD_TOO_LARGE
         );
         }
+
+        @ExceptionHandler(ReminderAlreadyExistsException.class)
+        public ResponseEntity<String> handleReminderAlreadyExistsException(
+                ReminderAlreadyExistsException ex) {
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ex.getMessage());
+        }
+
 }

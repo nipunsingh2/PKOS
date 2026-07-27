@@ -1,0 +1,15 @@
+package com.pkos.backend.dto.request;
+
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDateTime;
+
+public record UpdateReminderRequest(
+
+        @NotNull(message = "Reminder time is required.")
+        @Future(message = "Reminder time must be in the future.")
+        LocalDateTime remindAt
+
+) {
+}
