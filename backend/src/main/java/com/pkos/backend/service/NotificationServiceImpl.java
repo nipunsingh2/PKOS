@@ -70,7 +70,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         notification.setRead(true);
 
-        notificationRepository.save(notification);
+        // notificationRepository.save(notification);
 
         return notificationMapper.toResponse(notification);
     }

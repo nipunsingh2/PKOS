@@ -54,4 +54,13 @@ public class User {
     )
     @Builder.Default
     private List<Notebook> notebooks = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<Event> events = new ArrayList<>();
 }

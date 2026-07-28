@@ -1,28 +1,31 @@
 package com.pkos.backend.exception;
 
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
-import com.pkos.backend.dto.response.ErrorResponse;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+
+import com.pkos.backend.dto.response.ErrorResponse;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger logger =
-        LoggerFactory.getLogger(GlobalExceptionHandler.class);
+            LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(
             MethodArgumentNotValidException exception) {
-                logger.warn("Validation failed.");
+
+        logger.warn("Validation failed.");
 
         Map<String, String> errors = new HashMap<>();
 
@@ -44,7 +47,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
             ResourceNotFoundException exception) {
-                logger.warn("Resource not found: {}", exception.getMessage());
+
+        logger.warn("Resource not found: {}", exception.getMessage());
 
         ErrorResponse response = new ErrorResponse(
                 LocalDateTime.now(),
@@ -57,57 +61,62 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
-        public ResponseEntity<ErrorResponse> handleDuplicateResourceException(
-                DuplicateResourceException exception) {
-                        logger.warn("Duplicate resource: {}", exception.getMessage());
-                ErrorResponse response = new ErrorResponse(
-                        LocalDateTime.now(),
-                        HttpStatus.CONFLICT.value(),
-                        exception.getMessage(),
-                        null
-                );
+    public ResponseEntity<ErrorResponse> handleDuplicateResourceException(
+            DuplicateResourceException exception) {
 
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-        }
+        logger.warn("Duplicate resource: {}", exception.getMessage());
 
-
-
-        @ExceptionHandler(Exception.class)
-        public ResponseEntity<ErrorResponse> handleGeneralException(Exception exception) {
-                logger.error(
-                        "Unexpected server error.",
-                        exception
-                );
-                ErrorResponse response = new ErrorResponse(
+        ErrorResponse response = new ErrorResponse(
                 LocalDateTime.now(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            "   An unexpected internal server error occurred.",
+                HttpStatus.CONFLICT.value(),
+                exception.getMessage(),
                 null
-                );
-                return new ResponseEntity<>(
-                        response,
-                        HttpStatus.INTERNAL_SERVER_ERROR
-                );
-        }
-        @ExceptionHandler(IllegalArgumentException.class)
-        public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
-                        IllegalArgumentException exception) {
-                logger.warn("Invalid file upload: {}", exception.getMessage());
-                ErrorResponse response = new ErrorResponse(
-                        LocalDateTime.now(),
-                        HttpStatus.BAD_REQUEST.value(),
-                        exception.getMessage(),
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(InvalidEventTimeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidEventTimeException(
+            InvalidEventTimeException exception) {
+
+        logger.warn("Invalid event time: {}", exception.getMessage());
+
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                exception.getMessage(),
                 null
-                );
+        );
+
         return new ResponseEntity<>(
                 response,
                 HttpStatus.BAD_REQUEST
         );
-        }
+    }
 
-        @ExceptionHandler(MaxUploadSizeExceededException.class)
-        public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceededException(
-                MaxUploadSizeExceededException exception) {
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+            IllegalArgumentException exception) {
+
+        logger.warn("Invalid request: {}", exception.getMessage());
+
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                exception.getMessage(),
+                null
+        );
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException exception) {
 
         logger.warn("File exceeds maximum upload size.");
 
@@ -122,15 +131,46 @@ public class GlobalExceptionHandler {
                 response,
                 HttpStatus.PAYLOAD_TOO_LARGE
         );
-        }
+    }
 
-        @ExceptionHandler(ReminderAlreadyExistsException.class)
-        public ResponseEntity<String> handleReminderAlreadyExistsException(
-                ReminderAlreadyExistsException ex) {
+    @ExceptionHandler(ReminderAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleReminderAlreadyExistsException(
+            ReminderAlreadyExistsException exception) {
 
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(ex.getMessage());
-        }
+        logger.warn("Reminder already exists: {}", exception.getMessage());
 
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                exception.getMessage(),
+                null
+        );
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.CONFLICT
+        );
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGeneralException(
+            Exception exception) {
+
+        logger.error(
+                "Unexpected server error.",
+                exception
+        );
+
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "An unexpected internal server error occurred.",
+                null
+        );
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.INTERNAL_SERVER_ERROR
+        );
+    }
 }
