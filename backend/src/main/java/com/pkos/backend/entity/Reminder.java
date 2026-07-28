@@ -35,7 +35,11 @@ public class Reminder {
     private LocalDateTime createdAt;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "note_id", nullable = false, unique = true)
+    @JoinColumn(name = "note_id", nullable = true, unique = true)
     private Note note;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "event_id", unique = true)
+    private Event event;
 
 }

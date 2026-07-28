@@ -11,10 +11,11 @@ import com.pkos.backend.dto.request.UpdateEventRequest;
 import com.pkos.backend.dto.response.EventResponse;
 import com.pkos.backend.entity.Event;
 import com.pkos.backend.entity.User;
+import com.pkos.backend.exception.InvalidEventTimeException;
 import com.pkos.backend.exception.ResourceNotFoundException;
 import com.pkos.backend.mapper.EventMapper;
 import com.pkos.backend.repository.EventRepository;
-import com.pkos.backend.exception.InvalidEventTimeException;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -29,7 +30,13 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventResponse createEvent(CreateEventRequest request) {
 
-        validateEventTime(request.getStartTime(), request.getEndTime());
+        validateEventTime(
+                request.getStartTime(),
+                request.getEndTime());
+
+        validateReminderTime(
+                request.getRemindAt(),
+                request.getStartTime());
 
         User currentUser = currentUserService.getCurrentUser();
 
@@ -42,6 +49,7 @@ public class EventServiceImpl implements EventService {
         event.setAllDay(request.isAllDay());
         event.setLocation(request.getLocation());
         event.setColor(request.getColor());
+        event.setRemindAt(request.getRemindAt());
         event.setUser(currentUser);
 
         eventRepository.save(event);
@@ -50,10 +58,17 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventResponse updateEvent(Long eventId,
-                                     UpdateEventRequest request) {
+    public EventResponse updateEvent(
+            Long eventId,
+            UpdateEventRequest request) {
 
-        validateEventTime(request.getStartTime(), request.getEndTime());
+        validateEventTime(
+                request.getStartTime(),
+                request.getEndTime());
+
+        validateReminderTime(
+                request.getRemindAt(),
+                request.getStartTime());
 
         User currentUser = currentUserService.getCurrentUser();
 
@@ -66,6 +81,7 @@ public class EventServiceImpl implements EventService {
         event.setAllDay(request.isAllDay());
         event.setLocation(request.getLocation());
         event.setColor(request.getColor());
+        event.setRemindAt(request.getRemindAt());
 
         return eventMapper.toResponse(event);
     }
@@ -135,8 +151,18 @@ public class EventServiceImpl implements EventService {
             LocalDateTime end) {
 
         if (!start.isBefore(end)) {
-        throw new InvalidEventTimeException(
-                "Event start time must be before end time");
+            throw new InvalidEventTimeException(
+                    "Event start time must be before end time");
+        }
+    }
+
+    private void validateReminderTime(
+            LocalDateTime remindAt,
+            LocalDateTime startTime) {
+
+        if (remindAt != null && !remindAt.isBefore(startTime)) {
+            throw new InvalidEventTimeException(
+                    "Reminder time must be before event start time");
         }
     }
 }

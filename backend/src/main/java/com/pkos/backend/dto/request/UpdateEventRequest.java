@@ -31,4 +31,6 @@ public class UpdateEventRequest {
 
     @Size(max = 20, message = "Color cannot exceed 20 characters")
     private String color;
+
+    private LocalDateTime remindAt;
 }

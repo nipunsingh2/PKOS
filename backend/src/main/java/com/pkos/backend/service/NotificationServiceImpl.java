@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.pkos.backend.entity.Event;
 import com.pkos.backend.dto.response.NotificationResponse;
 import com.pkos.backend.entity.Notification;
 import com.pkos.backend.entity.NotificationType;
@@ -88,6 +88,19 @@ public class NotificationServiceImpl implements NotificationService {
         notificationRepository.save(notification);
     }
 
+    @Override
+    public void createEventReminderNotification(Event event) {
+
+        Notification notification = new Notification();
+
+        notification.setUser(event.getUser());
+        notification.setEvent(event);
+        notification.setType(NotificationType.REMINDER);
+        notification.setMessage("Event Reminder: " + event.getTitle());
+
+        notificationRepository.save(notification);
+    }
+
     private Notification findOwnedNotification(Long notificationId, User user) {
 
         Notification notification = notificationRepository
@@ -101,4 +114,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         return notification;
     }
+
+
+
 }

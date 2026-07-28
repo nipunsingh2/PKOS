@@ -50,6 +50,12 @@ public class Event {
     @Column(length = 20)
     private String color;
 
+    @Column
+    private LocalDateTime remindAt;
+
+    @Column(nullable = false)
+    private boolean reminderSent = false;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

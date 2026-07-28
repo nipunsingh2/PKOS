@@ -23,4 +23,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByUserAndStartTimeGreaterThanEqualOrderByStartTimeAsc(
             User user,
             LocalDateTime start);
+
+    List<Event> findByReminderSentFalseAndRemindAtLessThanEqual(
+            LocalDateTime remindAt);
 }

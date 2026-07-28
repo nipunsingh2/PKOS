@@ -52,4 +52,8 @@ public class Notification {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reminder_id")
     private Reminder reminder;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "event_id")
+    private Event event;
 }

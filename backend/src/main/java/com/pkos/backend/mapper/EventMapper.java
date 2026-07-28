@@ -22,6 +22,7 @@ public class EventMapper {
         response.setColor(event.getColor());
         response.setCreatedAt(event.getCreatedAt());
         response.setUpdatedAt(event.getUpdatedAt());
+        response.setRemindAt(event.getRemindAt());
 
         return response;
     }

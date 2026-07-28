@@ -28,4 +28,6 @@ public class EventResponse {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    private LocalDateTime remindAt;
 }
