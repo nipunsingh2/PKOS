@@ -67,6 +67,14 @@ public class Note {
     )
     private Reminder reminder;
 
+    @OneToOne(
+            mappedBy = "note",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private NoteEmbedding embedding;
+
     @ManyToMany
     @JoinTable(
             name = "note_tags",
