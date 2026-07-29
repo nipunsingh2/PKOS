@@ -26,7 +26,8 @@ import com.pkos.backend.entity.Notebook;
 import com.pkos.backend.repository.NotebookRepository;
 import com.pkos.backend.util.AppConstants;
 import java.util.List;
-
+import org.springframework.context.ApplicationEventPublisher;
+import com.pkos.backend.event.NoteSavedEvent;
 
 @Service
 public class NoteService {
@@ -40,6 +41,7 @@ public class NoteService {
     private final TagRepository tagRepository;
     private final TagMapper tagMapper;
     private final NotebookRepository notebookRepository;
+    private final ApplicationEventPublisher eventPublisher;
     public NoteService(
                 NoteRepository noteRepository,
                 NoteMapper noteMapper,
@@ -47,7 +49,8 @@ public class NoteService {
                 AuditService auditService,
                 TagRepository tagRepository,
                 TagMapper tagMapper,
-                NotebookRepository notebookRepository) {
+                NotebookRepository notebookRepository,
+                ApplicationEventPublisher eventPublisher) {
 
         this.noteRepository = noteRepository;
         this.noteMapper = noteMapper;
@@ -56,6 +59,7 @@ public class NoteService {
         this.tagRepository = tagRepository;
         this.tagMapper = tagMapper;
         this.notebookRepository = notebookRepository;
+        this.eventPublisher = eventPublisher;
         }
 
         @Transactional
@@ -73,8 +77,10 @@ public class NoteService {
 
                 note.setNotebook(inbox);
 
-                Note savedNote =
-                        noteRepository.save(note);
+                Note savedNote = noteRepository.save(note);
+                eventPublisher.publishEvent(
+                        new NoteSavedEvent(savedNote.getId())
+                );
                 auditService.logEvent(
                 "Created Note",
                         currentUser.getEmail()
@@ -222,6 +228,9 @@ public class NoteService {
         note.setContent(request.getContent());
         note.setColor(request.getColor());
         Note updatedNote = noteRepository.save(note);
+        eventPublisher.publishEvent(
+        new NoteSavedEvent(updatedNote.getId())
+        );
         auditService.logEvent(
         "Updated Note",
                 currentUser.getEmail()
@@ -416,9 +425,9 @@ public class NoteService {
         @Transactional
         @CacheEvict(value = "notes", key = "#id")
         public void permanentlyDeleteNote(Long id) {
-
-        User currentUser =
-                currentUserService.getCurrentUser();
+        
+        
+        User currentUser = currentUserService.getCurrentUser();
 
         Note note = noteRepository
                 .findByIdAndUserAndDeletedTrue(
@@ -435,7 +444,6 @@ public class NoteService {
         }
 
         note.getTags().clear();
-
         noteRepository.delete(note);
 
         auditService.logEvent(
@@ -466,7 +474,9 @@ public class NoteService {
         tag.getNotes().add(note);
 
         Note updatedNote = noteRepository.save(note);
-
+        eventPublisher.publishEvent(
+        new NoteSavedEvent(updatedNote.getId())
+        );
         auditService.logEvent(
                 "Added Tag To Note",
                 currentUser.getEmail()
@@ -513,7 +523,9 @@ public class NoteService {
         tag.getNotes().remove(note);
 
         Note updatedNote = noteRepository.save(note);
-
+        eventPublisher.publishEvent(
+        new NoteSavedEvent(updatedNote.getId())
+        );
         auditService.logEvent(
                 "Removed Tag From Note",
                 currentUser.getEmail()

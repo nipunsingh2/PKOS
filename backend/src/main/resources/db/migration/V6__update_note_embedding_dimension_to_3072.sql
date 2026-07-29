@@ -1,0 +1,3 @@
+ALTER TABLE note_embeddings
+ALTER COLUMN embedding
+TYPE VECTOR(3072);

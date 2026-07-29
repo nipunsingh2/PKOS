@@ -44,7 +44,7 @@ public class NoteEmbedding {
     private Integer embeddingVersion;
 
     @JdbcTypeCode(SqlTypes.VECTOR)
-    @Array(length = 768)
+    @Array(length = 3072)
     @Column(name = "embedding", nullable = false)
     private float[] embedding;
 

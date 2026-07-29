@@ -14,10 +14,10 @@ public class GeminiProperties {
 
     private String apiKey;
 
-    private String baseUrl;
-
     private String embeddingModel;
 
     private Integer embeddingDimension;
+    
+    private Integer embeddingVersion;
 
 }
