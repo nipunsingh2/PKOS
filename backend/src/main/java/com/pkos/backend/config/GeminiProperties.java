@@ -20,4 +20,6 @@ public class GeminiProperties {
     
     private Integer embeddingVersion;
 
+    private String chatModel;
+
 }
