@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import com.pkos.backend.entity.Note;
 import com.pkos.backend.entity.NoteEmbedding;
+import com.pkos.backend.repository.projection.SemanticSearchProjection;
 
 public interface NoteEmbeddingRepository extends JpaRepository<NoteEmbedding, Long> {
 
@@ -28,6 +29,25 @@ public interface NoteEmbeddingRepository extends JpaRepository<NoteEmbedding, Lo
         """,
         nativeQuery = true)
     List<NoteEmbedding> findMostSimilarNotes(
+            @Param("userId") Long userId,
+            @Param("embedding") String embedding,
+            @Param("limit") int limit
+    );
+
+    @Query(value = """
+        SELECT
+            ne.note_id AS noteId,
+            1 - (ne.embedding <=> CAST(:embedding AS vector)) AS similarity
+        FROM note_embeddings ne
+        JOIN notes n ON n.id = ne.note_id
+        WHERE n.user_id = :userId
+        AND n.deleted = false
+        AND n.archived = false
+        ORDER BY ne.embedding <=> CAST(:embedding AS vector)
+        LIMIT :limit
+        """,
+        nativeQuery = true)
+    List<SemanticSearchProjection> findMostSimilarNotesWithScore(
             @Param("userId") Long userId,
             @Param("embedding") String embedding,
             @Param("limit") int limit

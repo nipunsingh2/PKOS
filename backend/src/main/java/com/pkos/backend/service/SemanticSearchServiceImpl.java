@@ -1,44 +1,39 @@
 package com.pkos.backend.service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.pkos.backend.entity.NoteEmbedding;
-import com.pkos.backend.entity.User;
-import com.pkos.backend.repository.NoteEmbeddingRepository;
-import java.util.List;
 
-import com.pkos.backend.dto.response.NoteResponse;
 import com.pkos.backend.dto.response.SearchResponse;
 import com.pkos.backend.dto.response.SearchResult;
-import com.pkos.backend.mapper.NoteMapper;
+import com.pkos.backend.entity.User;
 import com.pkos.backend.mapper.SearchMapper;
+import com.pkos.backend.repository.NoteEmbeddingRepository;
+import com.pkos.backend.repository.NoteRepository;
+import com.pkos.backend.repository.projection.SemanticSearchProjection;
 
+import lombok.RequiredArgsConstructor;
 
 @Service
-@Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class SemanticSearchServiceImpl implements SemanticSearchService {
 
-    private static final int DEFAULT_LIMIT = 10;
-
     private final EmbeddingService embeddingService;
+
     private final NoteEmbeddingRepository noteEmbeddingRepository;
+
+    private final NoteRepository noteRepository;
+
     private final CurrentUserService currentUserService;
+
     private final SearchMapper searchMapper;
 
-    public SemanticSearchServiceImpl(
-            EmbeddingService embeddingService,
-            NoteEmbeddingRepository noteEmbeddingRepository,
-            CurrentUserService currentUserService,
-            SearchMapper searchMapper) {
+    @Value("${pkos.search.semantic.threshold}")
+    private double similarityThreshold;
 
-        this.embeddingService = embeddingService;
-        this.noteEmbeddingRepository = noteEmbeddingRepository;
-        this.currentUserService = currentUserService;
-        this.searchMapper = searchMapper;
-    }
+    @Value("${pkos.search.semantic.limit}")
+    private int searchLimit;
 
     @Override
     public SearchResponse search(String query) {
@@ -49,15 +44,17 @@ public class SemanticSearchServiceImpl implements SemanticSearchService {
 
         String pgVector = toPgVector(embedding);
 
-        List<NoteEmbedding> embeddings =
-                noteEmbeddingRepository.findMostSimilarNotes(
+        List<SemanticSearchProjection> matches =
+                noteEmbeddingRepository.findMostSimilarNotesWithScore(
                         currentUser.getId(),
                         pgVector,
-                        DEFAULT_LIMIT
+                        searchLimit
                 );
 
-        List<SearchResult> results = embeddings.stream()
-                .map(NoteEmbedding::getNote)
+        List<SearchResult> results = matches.stream()
+                .filter(match -> match.getSimilarity() >= similarityThreshold)
+                .map(match -> noteRepository.findById(match.getNoteId())
+                        .orElseThrow())
                 .map(searchMapper::fromNote)
                 .toList();
 
@@ -66,6 +63,7 @@ public class SemanticSearchServiceImpl implements SemanticSearchService {
                 .totalResults(results.size())
                 .build();
     }
+
     private String toPgVector(float[] embedding) {
 
         StringBuilder builder = new StringBuilder("[");
