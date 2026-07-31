@@ -6,9 +6,8 @@ import org.springframework.stereotype.Service;
 
 import com.pkos.backend.dto.response.SearchResponse;
 import com.pkos.backend.dto.response.SearchResult;
-import com.pkos.backend.entity.Note;
 import com.pkos.backend.mapper.SearchMapper;
-
+import com.pkos.backend.dto.search.SemanticSearchResult;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -22,10 +21,11 @@ public class SemanticSearchServiceImpl implements SemanticSearchService {
     @Override
     public SearchResponse search(String query) {
 
-        List<Note> notes =
+        List<SemanticSearchResult> semanticResults =
                 semanticRetrievalService.retrieveRelevantNotes(query);
 
-        List<SearchResult> results = notes.stream()
+        List<SearchResult> results = semanticResults.stream()
+                .map(SemanticSearchResult::getNote)
                 .map(searchMapper::fromNote)
                 .toList();
 

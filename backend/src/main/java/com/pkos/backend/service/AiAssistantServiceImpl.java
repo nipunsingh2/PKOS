@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.pkos.backend.dto.response.AiQuestionResponse;
 import com.pkos.backend.dto.response.SourceNoteResponse;
+import com.pkos.backend.dto.search.HybridSearchResult;
 import com.pkos.backend.entity.Note;
 
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AiAssistantServiceImpl implements AiAssistantService {
 
-    private final SemanticRetrievalService semanticRetrievalService;
+    private final HybridSearchService hybridSearchService;
 
     private final PromptBuilderService promptBuilderService;
 
@@ -23,8 +24,12 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     @Override
     public AiQuestionResponse askQuestion(String question) {
 
-        List<Note> notes =
-                semanticRetrievalService.retrieveRelevantNotes(question);
+        List<HybridSearchResult> hybridResults =
+                hybridSearchService.search(question);
+
+        List<Note> notes = hybridResults.stream()
+                .map(HybridSearchResult::getNote)
+                .toList();
 
         String prompt =
                 promptBuilderService.buildPrompt(question, notes);

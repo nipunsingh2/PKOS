@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
+import com.pkos.backend.dto.search.SemanticSearchResult;
 import com.pkos.backend.entity.Note;
 import com.pkos.backend.entity.User;
 import com.pkos.backend.repository.NoteEmbeddingRepository;
@@ -39,7 +39,7 @@ public class SemanticRetrievalServiceImpl
     private int searchLimit;
 
     @Override
-    public List<Note> retrieveRelevantNotes(String query) {
+    public List<SemanticSearchResult> retrieveRelevantNotes(String query) {
 
         if (query == null || query.isBlank()) {
             throw new IllegalArgumentException(
@@ -68,7 +68,7 @@ public class SemanticRetrievalServiceImpl
                 "Vector search returned {} matches",
                 matches.size());
 
-        List<Note> notes = new ArrayList<>();
+        List<SemanticSearchResult> results = new ArrayList<>();
 
         for (SemanticSearchProjection match : matches) {
 
@@ -85,25 +85,30 @@ public class SemanticRetrievalServiceImpl
                 continue;
             }
 
-            noteRepository
-                    .findByIdAndUserAndDeletedFalseAndArchivedFalse(
-                            match.getNoteId(),
-                            currentUser)
-                    .ifPresent(note -> {
+                noteRepository
+                        .findByIdAndUserAndDeletedFalseAndArchivedFalse(
+                                match.getNoteId(),
+                                currentUser)
+                        .ifPresent(note -> {
 
                         logger.debug(
                                 "Accepted note: {}",
                                 note.getTitle());
 
-                        notes.add(note);
-                    });
+                        results.add(
+                                new SemanticSearchResult(
+                                        note,
+                                        match.getSimilarity()
+                                )
+                        );
+                        });
         }
 
         logger.debug(
                 "Final retrieved notes = {}",
-                notes.size());
+                results.size());
 
-        return notes;
+        return results;
     }
 
     private String toPgVector(float[] embedding) {

@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
+import com.pkos.backend.repository.projection.KeywordSearchProjection;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +29,8 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
             User user
     );
 
+    List<Note> findAllByIdIn(List<Long> ids);
+    
     Page<Note> findByNotebookAndUserAndDeletedFalseAndArchivedFalse(
             Notebook notebook,
             User user,
@@ -80,5 +82,32 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
             Long id,
             User user
     );
+
+        @Query(value = """
+        SELECT
+                n.id AS noteId,
+                ts_rank(
+                to_tsvector(
+                        'english',
+                        coalesce(n.title, '') || ' ' || coalesce(n.content, '')
+                ),
+                plainto_tsquery('english', :query)
+                ) AS keywordRank
+        FROM notes n
+        WHERE n.user_id = :userId
+        AND n.deleted = false
+        AND n.archived = false
+        AND to_tsvector(
+                'english',
+                coalesce(n.title, '') || ' ' || coalesce(n.content, '')
+        ) @@ plainto_tsquery('english', :query)
+        ORDER BY keywordRank DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+        List<KeywordSearchProjection> keywordSearch(
+                @Param("userId") Long userId,
+                @Param("query") String query,
+                @Param("limit") int limit
+        );
 
 }

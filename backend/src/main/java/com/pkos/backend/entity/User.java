@@ -2,7 +2,6 @@ package com.pkos.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,4 +62,13 @@ public class User {
     )
     @Builder.Default
     private List<Event> events = new ArrayList<>();
+
+        @OneToMany(
+                mappedBy = "user",
+                cascade = CascadeType.ALL,
+                orphanRemoval = true,
+                fetch = FetchType.LAZY
+        )
+        @Builder.Default
+        private List<Conversation> conversations = new ArrayList<>();
 }
