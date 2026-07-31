@@ -3,16 +3,16 @@ package com.pkos.backend.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+
 import com.pkos.backend.dto.request.AiChatRequest;
 import com.pkos.backend.dto.response.AiChatResponse;
-import com.pkos.backend.entity.Conversation;
-import com.pkos.backend.entity.ConversationMessage;
 import com.pkos.backend.dto.response.AiQuestionResponse;
 import com.pkos.backend.dto.response.SourceNoteResponse;
 import com.pkos.backend.dto.search.HybridSearchResult;
+import com.pkos.backend.entity.Conversation;
+import com.pkos.backend.entity.ConversationMessage;
+import com.pkos.backend.entity.ConversationSummary;
 import com.pkos.backend.entity.Note;
-
-
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,6 +27,10 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     private final GeminiChatService geminiChatService;
 
     private final ConversationService conversationService;
+
+    private final ConversationSummaryService conversationSummaryService;
+
+    private final ConversationSummaryManager conversationSummaryManager;
 
     @Override
     public AiQuestionResponse askQuestion(String question) {
@@ -57,10 +61,10 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .build();
     }
 
-        @Override
-        public AiChatResponse chat(
-                AiChatRequest request
-        ) {
+    @Override
+    public AiChatResponse chat(
+            AiChatRequest request
+    ) {
 
         Conversation conversation =
                 conversationService.getConversation(
@@ -73,8 +77,9 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         );
 
         List<ConversationMessage> conversationHistory =
-                conversationService.getConversationHistory(
-                        conversation.getId()
+                conversationService.getRecentConversationHistory(
+                        conversation.getId(),
+                        20
                 );
 
         List<HybridSearchResult> hybridResults =
@@ -86,10 +91,18 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .map(HybridSearchResult::getNote)
                 .toList();
 
+        String conversationSummary =
+                conversationSummaryService
+                        .getSummary(conversation)
+                        .map(ConversationSummary::getSummary)
+                        .orElse(null);
+
         String prompt =
                 promptBuilderService.buildConversationPrompt(
+                        conversationSummary,
+                        notes,
                         conversationHistory,
-                        notes
+                        request.getMessage()
                 );
 
         String answer =
@@ -98,6 +111,10 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         conversationService.appendAssistantMessage(
                 conversation,
                 answer
+        );
+
+        conversationSummaryManager.updateSummaryIfRequired(
+        conversation
         );
 
         List<SourceNoteResponse> sources = notes.stream()
@@ -112,6 +129,6 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .answer(answer)
                 .sources(sources)
                 .build();
-        }
+    }
 
 }

@@ -18,6 +18,11 @@ import com.pkos.backend.repository.ConversationRepository;
 import com.pkos.backend.entity.MessageRole;
 import com.pkos.backend.exception.ConversationNotFoundException;
 import com.pkos.backend.exception.ResourceNotFoundException;
+import java.util.ArrayList;
+import java.util.Collections;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
 
 @Service
 @Transactional
@@ -335,6 +340,33 @@ public class ConversationService {
                 );
         }
 
+
+        @Transactional(readOnly = true)
+        public List<ConversationMessage> getRecentConversationHistory(
+                Long conversationId,
+                int limit
+        ) {
+
+        Conversation conversation =
+                findOwnedConversation(conversationId);
+
+        List<ConversationMessage> messages =
+                new ArrayList<>(
+                        conversationMessageRepository.findByConversation(
+                                conversation,
+                                PageRequest.of(
+                                        0,
+                                        limit,
+                                        Sort.by(Sort.Direction.DESC, "createdAt")
+                                )
+                        ).getContent()
+                );
+
+        Collections.reverse(messages);
+
+        return messages;
+        }
+
     @Transactional(readOnly = true)
     public List<ConversationMessageResponse> getConversationMessages(
             Long conversationId
@@ -363,5 +395,15 @@ public class ConversationService {
 
         return messages;
     }
+
+        @Transactional(readOnly = true)
+        public long countMessages(
+                Conversation conversation
+        ) {
+
+        return conversationMessageRepository.countByConversation(
+                conversation
+        );
+        }
 
 }
