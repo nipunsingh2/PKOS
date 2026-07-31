@@ -225,6 +225,7 @@ public class ConversationService {
 
         return conversations;
     }
+    
 
     public Conversation renameConversation(
             Long conversationId,
@@ -319,6 +320,20 @@ public class ConversationService {
         );
     }
 
+
+        @Transactional(readOnly = true)
+        public List<ConversationMessage> getConversationHistory(
+                Long conversationId
+        ) {
+
+        Conversation conversation =
+                findOwnedConversation(conversationId);
+
+        return conversationMessageRepository
+                .findByConversationOrderByCreatedAtAsc(
+                        conversation
+                );
+        }
 
     @Transactional(readOnly = true)
     public List<ConversationMessageResponse> getConversationMessages(
