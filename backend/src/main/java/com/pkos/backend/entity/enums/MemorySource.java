@@ -1,6 +1,6 @@
 package com.pkos.backend.entity.enums;
 
-public enum KnowledgeSource {
+public enum MemorySource {
 
     AI_CHAT,
 

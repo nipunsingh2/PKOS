@@ -5,23 +5,24 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.pkos.backend.entity.Memory;
 import com.pkos.backend.entity.User;
-import com.pkos.backend.entity.UserKnowledge;
-import com.pkos.backend.entity.enums.KnowledgeType;
 
-public interface UserKnowledgeRepository
-        extends JpaRepository<UserKnowledge, Long> {
+import com.pkos.backend.entity.enums.MemoryType;
 
-    List<UserKnowledge> findByUser(
+public interface MemoryRepository
+        extends JpaRepository<Memory, Long> {
+
+    List<Memory> findByUser(
             User user
     );
 
-    List<UserKnowledge> findByUserAndKnowledgeType(
+    List<Memory> findByUserAndMemoryType(
             User user,
-            KnowledgeType knowledgeType
+            MemoryType memoryType
     );
 
-    Optional<UserKnowledge> findByUserAndKey(
+    Optional<Memory> findByUserAndKey(
             User user,
             String key
     );

@@ -1,6 +1,6 @@
 package com.pkos.backend.entity.enums;
 
-public enum KnowledgeType {
+public enum MemoryType {
 
     GOAL,
 

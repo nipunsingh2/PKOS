@@ -6,8 +6,8 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import com.pkos.backend.entity.enums.KnowledgeSource;
-import com.pkos.backend.entity.enums.KnowledgeType;
+import com.pkos.backend.entity.enums.MemorySource;
+import com.pkos.backend.entity.enums.MemoryType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -30,28 +30,28 @@ import lombok.Setter;
 
 @Entity
 @Table(
-        name = "user_knowledge",
+        name = "memories",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_user_knowledge_user_key",
+                        name = "uk_memory_user_key",
                         columnNames = {
                                 "user_id",
-                                "knowledge_key"
+                                "memory_key"
                         }
                 )
         },
         indexes = {
                 @Index(
-                        name = "idx_user_knowledge_user",
+                        name = "idx_memory_user",
                         columnList = "user_id"
                 ),
                 @Index(
-                        name = "idx_user_knowledge_type",
-                        columnList = "knowledge_type"
+                        name = "idx_memory_type",
+                        columnList = "memory_type"
                 ),
                 @Index(
-                        name = "idx_user_knowledge_key",
-                        columnList = "knowledge_key"
+                        name = "idx_memory_key",
+                        columnList = "memory_key"
                 )
         }
 )
@@ -60,7 +60,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserKnowledge {
+public class Memory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -75,14 +75,14 @@ public class UserKnowledge {
 
     @Enumerated(EnumType.STRING)
     @Column(
-            name = "knowledge_type",
+            name = "memory_type",
             nullable = false,
             length = 30
     )
-    private KnowledgeType knowledgeType;
+    private MemoryType memoryType;
 
     @Column(
-            name = "knowledge_key",
+            name = "memory_key",
             nullable = false,
             length = 100
     )
@@ -112,7 +112,7 @@ public class UserKnowledge {
             nullable = false,
             length = 30
     )
-    private KnowledgeSource source;
+    private MemorySource source;
 
     @CreationTimestamp
     @Column(
@@ -124,8 +124,5 @@ public class UserKnowledge {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
-
-    @Column(nullable = false)
-    private LocalDateTime lastVerifiedAt;
 
 }

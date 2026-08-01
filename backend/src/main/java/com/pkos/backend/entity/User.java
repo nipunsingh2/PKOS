@@ -79,6 +79,6 @@ public class User {
                 fetch = FetchType.LAZY
         )
         @Builder.Default
-        private List<UserKnowledge> knowledge = new ArrayList<>();
+        private List<Memory> memories = new ArrayList<>();
 
 }
