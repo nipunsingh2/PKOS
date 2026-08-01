@@ -17,4 +17,9 @@ public interface ConversationSummaryService {
             int summarizedMessageCount
     );
 
+    ConversationSummary updateMemoryProcessedCount(
+            Conversation conversation,
+            int memoryProcessedMessageCount
+    );
+
 }

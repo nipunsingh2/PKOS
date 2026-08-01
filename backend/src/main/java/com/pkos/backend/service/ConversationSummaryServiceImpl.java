@@ -17,14 +17,17 @@ import lombok.RequiredArgsConstructor;
 public class ConversationSummaryServiceImpl
         implements ConversationSummaryService {
 
-    private final ConversationSummaryRepository conversationSummaryRepository;
+    private final ConversationSummaryRepository
+            conversationSummaryRepository;
 
     @Override
     @Transactional(readOnly = true)
     public Optional<ConversationSummary> getSummary(
             Conversation conversation
     ) {
-        return conversationSummaryRepository.findByConversation(conversation);
+
+        return conversationSummaryRepository
+                .findByConversation(conversation);
     }
 
     @Override
@@ -40,6 +43,7 @@ public class ConversationSummaryServiceImpl
                         .orElse(
                                 ConversationSummary.builder()
                                         .conversation(conversation)
+                                        .memoryProcessedMessageCount(0)
                                         .build()
                         );
 
@@ -48,6 +52,33 @@ public class ConversationSummaryServiceImpl
                 summarizedMessageCount
         );
 
-        return conversationSummaryRepository.save(conversationSummary);
+        return conversationSummaryRepository.save(
+                conversationSummary
+        );
     }
+
+    @Override
+    public ConversationSummary updateMemoryProcessedCount(
+            Conversation conversation,
+            int memoryProcessedMessageCount
+    ) {
+
+        ConversationSummary conversationSummary =
+                conversationSummaryRepository
+                        .findByConversation(conversation)
+                        .orElseThrow(
+                                () -> new IllegalStateException(
+                                        "Conversation summary not found."
+                                )
+                        );
+
+        conversationSummary.setMemoryProcessedMessageCount(
+                memoryProcessedMessageCount
+        );
+
+        return conversationSummaryRepository.save(
+                conversationSummary
+        );
+    }
+
 }

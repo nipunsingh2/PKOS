@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.pkos.backend.dto.llm.LLMRequest;
 import com.pkos.backend.dto.request.AiChatRequest;
 import com.pkos.backend.dto.response.AiChatResponse;
 import com.pkos.backend.dto.response.AiQuestionResponse;
@@ -13,7 +14,6 @@ import com.pkos.backend.entity.Conversation;
 import com.pkos.backend.entity.ConversationMessage;
 import com.pkos.backend.entity.ConversationSummary;
 import com.pkos.backend.entity.Note;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -24,13 +24,15 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
     private final PromptBuilderService promptBuilderService;
 
-    private final GeminiChatService geminiChatService;
+    private final LLMService llmService;
 
     private final ConversationService conversationService;
 
     private final ConversationSummaryService conversationSummaryService;
 
     private final ConversationSummaryManager conversationSummaryManager;
+
+    private final MemoryManager memoryManager;
 
     @Override
     public AiQuestionResponse askQuestion(String question) {
@@ -46,7 +48,11 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 promptBuilderService.buildPrompt(question, notes);
 
         String answer =
-                geminiChatService.generateResponse(prompt);
+                llmService.generateResponse(
+                        LLMRequest.builder()
+                                .prompt(prompt)
+                                .build()
+                );
 
         List<SourceNoteResponse> sources = notes.stream()
                 .map(note -> SourceNoteResponse.builder()
@@ -106,7 +112,11 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 );
 
         String answer =
-                geminiChatService.generateResponse(prompt);
+                llmService.generateResponse(
+                        LLMRequest.builder()
+                                .prompt(prompt)
+                                .build()
+                );
 
         conversationService.appendAssistantMessage(
                 conversation,
@@ -114,7 +124,11 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         );
 
         conversationSummaryManager.updateSummaryIfRequired(
-        conversation
+                conversation
+        );
+
+        memoryManager.processConversation(
+                conversation
         );
 
         List<SourceNoteResponse> sources = notes.stream()

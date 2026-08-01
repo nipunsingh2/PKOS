@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.pkos.backend.dto.llm.LLMRequest;
 import com.pkos.backend.entity.ConversationMessage;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 public class ConversationSummaryGeneratorServiceImpl
         implements ConversationSummaryGeneratorService {
 
-    private final GeminiChatService geminiChatService;
+        private final LLMService llmService;
 
     @Override
     public String generateSummary(
@@ -55,8 +55,10 @@ Conversation:
                     .append("\n");
         }
 
-        return geminiChatService.generateResponse(
-                prompt.toString()
+        return llmService.generateResponse(
+                LLMRequest.builder()
+                        .prompt(prompt.toString())
+                        .build()
         );
     }
 

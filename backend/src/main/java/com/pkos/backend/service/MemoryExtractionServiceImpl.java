@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pkos.backend.dto.llm.LLMRequest;
 import com.pkos.backend.dto.memory.MemoryCandidate;
 import com.pkos.backend.dto.memory.MemoryExtractionResponse;
 
@@ -21,8 +22,8 @@ public class MemoryExtractionServiceImpl
     private final MemoryExtractionPromptService
             memoryExtractionPromptService;
 
-    private final GeminiChatService
-            geminiChatService;
+        private final LLMService
+                llmService;
 
     private final ObjectMapper objectMapper;
 
@@ -43,7 +44,11 @@ public class MemoryExtractionServiceImpl
                 );
 
         String response =
-                geminiChatService.generateResponse(prompt);
+                llmService.generateResponse(
+                        LLMRequest.builder()
+                                .prompt(prompt)
+                                .build()
+                );
 
         try {
 

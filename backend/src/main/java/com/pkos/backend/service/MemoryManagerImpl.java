@@ -3,11 +3,16 @@ package com.pkos.backend.service;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pkos.backend.dto.memory.MemoryCandidate;
+import com.pkos.backend.entity.Conversation;
+import com.pkos.backend.entity.ConversationMessage;
+import com.pkos.backend.entity.ConversationSummary;
 import com.pkos.backend.entity.Memory;
+import com.pkos.backend.entity.MessageRole;
 import com.pkos.backend.entity.User;
 import com.pkos.backend.entity.enums.MemorySource;
 
@@ -22,7 +27,10 @@ public class MemoryManagerImpl
     private static final BigDecimal DEFAULT_CONFIDENCE =
             BigDecimal.valueOf(0.90);
 
-    private final CurrentUserService currentUserService;
+    private final ConversationService conversationService;
+
+    private final ConversationSummaryService
+            conversationSummaryService;
 
     private final MemoryExtractionService
             memoryExtractionService;
@@ -31,22 +39,60 @@ public class MemoryManagerImpl
             memoryService;
 
     @Override
+    @Async
     public void processConversation(
-            String conversationSummary,
-            List<String> userMessages
+            Conversation conversation
     ) {
 
-        if (userMessages == null || userMessages.isEmpty()) {
+        User user = conversation.getUser();
+
+        ConversationSummary conversationSummary =
+                conversationSummaryService
+                        .getSummary(conversation)
+                        .orElse(null);
+
+        String summary = null;
+
+        int processedUserMessageCount = 0;
+
+        if (conversationSummary != null) {
+            summary = conversationSummary.getSummary();
+            processedUserMessageCount =
+                    conversationSummary
+                            .getMemoryProcessedMessageCount();
+        }
+
+        List<ConversationMessage> allMessages =
+                conversationService.getConversationHistory(
+                        conversation
+                );
+
+        List<ConversationMessage> userMessages =
+                allMessages.stream()
+                        .filter(message ->
+                                message.getRole() == MessageRole.USER
+                        )
+                        .toList();
+
+        if (processedUserMessageCount >=
+                userMessages.size()) {
             return;
         }
 
-        User user =
-                currentUserService.getCurrentUser();
+        List<String> newUserMessages =
+                userMessages.stream()
+                        .skip(processedUserMessageCount)
+                        .map(ConversationMessage::getContent)
+                        .toList();
+
+        if (newUserMessages.isEmpty()) {
+            return;
+        }
 
         List<MemoryCandidate> candidates =
                 memoryExtractionService.extractMemories(
-                        conversationSummary,
-                        userMessages
+                        summary,
+                        newUserMessages
                 );
 
         for (MemoryCandidate candidate : candidates) {
@@ -87,6 +133,15 @@ public class MemoryManagerImpl
                             .build();
 
             memoryService.save(memory);
+        }
+
+        if (conversationSummary != null) {
+
+            conversationSummaryService
+                    .updateMemoryProcessedCount(
+                            conversation,
+                            userMessages.size()
+                    );
         }
     }
 

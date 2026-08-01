@@ -41,6 +41,10 @@ public class ConversationSummary {
     @Column(nullable = false)
     private Integer summarizedMessageCount;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer memoryProcessedMessageCount = 0;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -52,5 +56,6 @@ public class ConversationSummary {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id", nullable = false, unique = true)
     private Conversation conversation;
+
 
 }

@@ -340,6 +340,17 @@ public class ConversationService {
                 );
         }
 
+        @Transactional(readOnly = true)
+        public List<ConversationMessage> getConversationHistory(
+                Conversation conversation
+        ) {
+
+        return conversationMessageRepository
+                .findByConversationOrderByCreatedAtAsc(
+                        conversation
+                );
+        }
+
 
         @Transactional(readOnly = true)
         public List<ConversationMessage> getRecentConversationHistory(

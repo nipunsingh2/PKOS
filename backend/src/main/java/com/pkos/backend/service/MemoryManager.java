@@ -1,12 +1,11 @@
 package com.pkos.backend.service;
 
-import java.util.List;
+import com.pkos.backend.entity.Conversation;
 
 public interface MemoryManager {
 
     void processConversation(
-            String conversationSummary,
-            List<String> userMessages
+            Conversation conversation
     );
 
 }
