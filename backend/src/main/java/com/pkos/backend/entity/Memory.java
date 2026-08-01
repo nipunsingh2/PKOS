@@ -33,10 +33,11 @@ import lombok.Setter;
         name = "memories",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_memory_user_key",
+                        name = "uk_memory_user_type_value",
                         columnNames = {
                                 "user_id",
-                                "memory_key"
+                                "memory_type",
+                                "value"
                         }
                 )
         },
@@ -48,10 +49,6 @@ import lombok.Setter;
                 @Index(
                         name = "idx_memory_type",
                         columnList = "memory_type"
-                ),
-                @Index(
-                        name = "idx_memory_key",
-                        columnList = "memory_key"
                 )
         }
 )
@@ -80,19 +77,6 @@ public class Memory {
             length = 30
     )
     private MemoryType memoryType;
-
-    @Column(
-            name = "memory_key",
-            nullable = false,
-            length = 100
-    )
-    private String key;
-
-    @Column(
-            nullable = false,
-            length = 150
-    )
-    private String displayName;
 
     @Column(
             nullable = false,

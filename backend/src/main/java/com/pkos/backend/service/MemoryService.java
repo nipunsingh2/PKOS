@@ -1,36 +1,37 @@
-package com.pkos.backend.repository;
+package com.pkos.backend.service;
 
 import java.util.List;
 import java.util.Optional;
-
-import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.pkos.backend.entity.Memory;
 import com.pkos.backend.entity.User;
 import com.pkos.backend.entity.enums.MemoryType;
 
-public interface MemoryRepository
-        extends JpaRepository<Memory, Long> {
+public interface MemoryService {
 
-    List<Memory> findByUser(
+    List<Memory> getMemories(
             User user
     );
 
-    List<Memory> findByUserAndMemoryType(
+    List<Memory> getMemories(
             User user,
             MemoryType memoryType
     );
 
-    Optional<Memory> findByUserAndMemoryTypeAndValue(
+    Optional<Memory> getMemory(
             User user,
             MemoryType memoryType,
             String value
     );
 
-    boolean existsByUserAndMemoryTypeAndValue(
+    boolean exists(
             User user,
             MemoryType memoryType,
             String value
+    );
+
+    Memory save(
+            Memory memory
     );
 
 }
