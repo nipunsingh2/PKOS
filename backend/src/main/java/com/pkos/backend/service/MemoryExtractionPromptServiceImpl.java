@@ -109,71 +109,94 @@ public class MemoryExtractionPromptServiceImpl
                 CANONICAL VALUE RULES
                 ==================================================
 
-                Store memories in their shortest stable form.
+                Store every memory as a concise, canonical factual statement.
+
+                The memory must preserve the relationship between the user (or the correct
+                owner) and the information.
+
+                Do not store isolated entities or keywords.
+
+                Always store enough context so that the memory remains meaningful even when
+                read independently months later.
 
                 PROJECT
-                    Store only the project name.
 
-                    Example:
-                    PKOS
+                Good:
+                User is building PKOS.
+                User is working on Hospital Bed Optimization System.
+
+                Bad:
+                PKOS
+                Hospital Bed Optimization System
 
                 TECHNOLOGY
-                    Store only the technology name.
 
-                    Examples:
-                    Java
-                    Spring Boot
-                    PostgreSQL
-                    Rust
-                    Docker
+                Store technologies that the user regularly uses or works with.
+
+                Good:
+                User uses Java.
+                User uses Spring Boot.
+                User works with PostgreSQL.
+
+                Bad:
+                Java
+                Spring Boot
+                PostgreSQL
 
                 SKILL
-                    Store only the skill.
 
-                    Examples:
-                    Java
-                    Machine Learning
-                    System Design
+                Good:
+                User is skilled in Java.
+                User is skilled in Machine Learning.
+                User is skilled in System Design.
+
+                Bad:
+                Java
+                Machine Learning
 
                 INTEREST
-                    Store only the interest.
 
-                    Examples:
-                    Psychology
-                    Chess
-                    Formula 1
+                Good:
+                User is interested in Chess.
+                User is interested in Formula 1.
+                User is interested in Psychology.
+
+                Bad:
+                Chess
+                Formula 1
 
                 PREFERENCE
-                    Store only the preferred item.
 
-                    Good:
-                    VS Code
-                    Dark Theme
-                    Vegetarian Diet
+                Good:
+                User prefers VS Code.
+                User prefers Java.
+                User follows a vegetarian diet.
+                User prefers dark theme.
 
-                    Bad:
-                    "User prefers VS Code."
+                Bad:
+                VS Code
+                Java
+                Vegetarian Diet
 
                 GOAL
-                    Store the goal as a concise long-term objective.
 
-                    Good:
-                    Become an SDE
-                    Learn Kubernetes
-                    Build PKOS
+                Store long-term goals.
+
+                Good:
+                User's goal is to become an SDE.
+                User's goal is to build PKOS.
+                User's goal is to learn Kubernetes.
 
                 FACT
-                    Preserve the exact fact without changing ownership.
 
-                    Good:
-                    Pratha's birthday is August 15
+                Preserve ownership exactly.
 
-                    Good:
-                    User lives in Delhi
+                Good:
+                Pratha's birthday is August 15.
+                User lives in Delhi.
 
-                    Bad:
-                    User's birthday is August 15
-                    (unless explicitly stated)
+                Never rewrite ownership.
+                Never invent ownership.
 
                 ==================================================
                 DUPLICATE RULES
@@ -260,7 +283,11 @@ public class MemoryExtractionPromptServiceImpl
 
                 Never change ownership.
 
-                Never paraphrase memories.
+                Never create multiple representations of the same fact.
+
+                Always produce one canonical factual statement for each memory.
+
+                If two different phrasings express the same meaning, return only one canonical memory.
 
                 Use the canonical value rules above.
 

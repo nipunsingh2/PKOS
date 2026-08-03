@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pkos.backend.dto.memory.MemoryCandidate;
+import com.pkos.backend.dto.memory.normalization.NormalizedMemory;
 import com.pkos.backend.entity.Conversation;
 import com.pkos.backend.entity.ConversationMessage;
 import com.pkos.backend.entity.ConversationSummary;
@@ -15,6 +16,7 @@ import com.pkos.backend.entity.Memory;
 import com.pkos.backend.entity.MessageRole;
 import com.pkos.backend.entity.User;
 import com.pkos.backend.entity.enums.MemorySource;
+import com.pkos.backend.service.memory.MemoryNormalizationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +36,9 @@ public class MemoryManagerImpl
 
     private final MemoryExtractionService
             memoryExtractionService;
+
+    private final MemoryNormalizationService
+            memoryNormalizationService;
 
     private final MemoryService
             memoryService;
@@ -74,8 +79,7 @@ public class MemoryManagerImpl
                         )
                         .toList();
 
-        if (processedUserMessageCount >=
-                userMessages.size()) {
+        if (processedUserMessageCount >= userMessages.size()) {
             return;
         }
 
@@ -97,26 +101,19 @@ public class MemoryManagerImpl
 
         for (MemoryCandidate candidate : candidates) {
 
-            if (candidate == null) {
+            if (!isValidCandidate(candidate)) {
                 continue;
             }
 
-            if (candidate.getMemoryType() == null) {
-                continue;
-            }
-
-            if (candidate.getValue() == null ||
-                    candidate.getValue().isBlank()) {
-                continue;
-            }
-
-            String value =
-                    candidate.getValue().trim();
+            NormalizedMemory normalizedMemory =
+                    memoryNormalizationService.normalize(
+                            candidate
+                    );
 
             if (memoryService.exists(
                     user,
-                    candidate.getMemoryType(),
-                    value
+                    normalizedMemory.getMemoryType(),
+                    normalizedMemory.getNormalizedValue()
             )) {
                 continue;
             }
@@ -125,9 +122,14 @@ public class MemoryManagerImpl
                     Memory.builder()
                             .user(user)
                             .memoryType(
-                                    candidate.getMemoryType()
+                                    normalizedMemory.getMemoryType()
                             )
-                            .value(value)
+                            .value(
+                                    normalizedMemory.getOriginalValue()
+                            )
+                            .normalizedValue(
+                                    normalizedMemory.getNormalizedValue()
+                            )
                             .confidence(DEFAULT_CONFIDENCE)
                             .source(MemorySource.AI_CHAT)
                             .build();
@@ -136,13 +138,22 @@ public class MemoryManagerImpl
         }
 
         if (conversationSummary != null) {
-
             conversationSummaryService
                     .updateMemoryProcessedCount(
                             conversation,
                             userMessages.size()
                     );
         }
+    }
+
+    private boolean isValidCandidate(
+            MemoryCandidate candidate
+    ) {
+
+        return candidate != null
+                && candidate.getMemoryType() != null
+                && candidate.getValue() != null
+                && !candidate.getValue().isBlank();
     }
 
 }

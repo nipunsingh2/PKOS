@@ -49,14 +49,15 @@ public class MemoryServiceImpl
     public Optional<Memory> getMemory(
             User user,
             MemoryType memoryType,
-            String value
+            String normalizedValue
     ) {
 
-        return memoryRepository.findByUserAndMemoryTypeAndValue(
-                user,
-                memoryType,
-                value
-        );
+        return memoryRepository
+                .findByUserAndMemoryTypeAndNormalizedValue(
+                        user,
+                        memoryType,
+                        normalizedValue
+                );
     }
 
     @Override
@@ -64,14 +65,15 @@ public class MemoryServiceImpl
     public boolean exists(
             User user,
             MemoryType memoryType,
-            String value
+            String normalizedValue
     ) {
 
-        return memoryRepository.existsByUserAndMemoryTypeAndValue(
-                user,
-                memoryType,
-                value
-        );
+        return memoryRepository
+                .existsByUserAndMemoryTypeAndNormalizedValue(
+                        user,
+                        memoryType,
+                        normalizedValue
+                );
     }
 
     @Override
@@ -84,10 +86,6 @@ public class MemoryServiceImpl
         return memoryRepository.save(memory);
     }
 
-    /**
-     * Initializes newly introduced Phase 18 fields so that existing callers
-     * remain fully backward compatible.
-     */
     private void initializeDefaults(
             Memory memory
     ) {

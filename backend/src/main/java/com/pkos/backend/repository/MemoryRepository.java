@@ -21,16 +21,16 @@ public interface MemoryRepository
             MemoryType memoryType
     );
 
-    Optional<Memory> findByUserAndMemoryTypeAndValue(
+    Optional<Memory> findByUserAndMemoryTypeAndNormalizedValue(
             User user,
             MemoryType memoryType,
-            String value
+            String normalizedValue
     );
 
-    boolean existsByUserAndMemoryTypeAndValue(
+    boolean existsByUserAndMemoryTypeAndNormalizedValue(
             User user,
             MemoryType memoryType,
-            String value
+            String normalizedValue
     );
 
 }

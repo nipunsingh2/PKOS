@@ -21,13 +21,13 @@ public interface MemoryService {
     Optional<Memory> getMemory(
             User user,
             MemoryType memoryType,
-            String value
+            String normalizedValue
     );
 
     boolean exists(
             User user,
             MemoryType memoryType,
-            String value
+            String normalizedValue
     );
 
     Memory save(
