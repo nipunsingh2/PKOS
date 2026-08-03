@@ -43,6 +43,9 @@ public class MemoryManagerImpl
     private final MemoryService
             memoryService;
 
+    private final MemoryEmbeddingService
+            memoryEmbeddingService;
+
     @Override
     @Async
     public void processConversation(
@@ -134,7 +137,9 @@ public class MemoryManagerImpl
                             .source(MemorySource.AI_CHAT)
                             .build();
 
-            memoryService.save(memory);
+                memory = memoryService.save(memory);
+
+                memoryEmbeddingService.create(memory);
         }
 
         if (conversationSummary != null) {
