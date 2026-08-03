@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.pkos.backend.entity.enums.MemorySource;
+import com.pkos.backend.entity.enums.MemoryStatus;
 import com.pkos.backend.entity.enums.MemoryType;
 
 import jakarta.persistence.Column;
@@ -59,6 +60,12 @@ import lombok.Setter;
 @Builder
 public class Memory {
 
+    /*
+     * -------------------------------------------------------------------------
+     * Identity
+     * -------------------------------------------------------------------------
+     */
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -70,6 +77,12 @@ public class Memory {
     )
     private User user;
 
+    /*
+     * -------------------------------------------------------------------------
+     * Classification
+     * -------------------------------------------------------------------------
+     */
+
     @Enumerated(EnumType.STRING)
     @Column(
             name = "memory_type",
@@ -78,11 +91,52 @@ public class Memory {
     )
     private MemoryType memoryType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(
+            nullable = false,
+            length = 20
+    )
+    @Builder.Default
+    private MemoryStatus status = MemoryStatus.CURRENT;
+
+    @Enumerated(EnumType.STRING)
+    @Column(
+            nullable = false,
+            length = 30
+    )
+    private MemorySource source;
+
+    /*
+     * -------------------------------------------------------------------------
+     * Content
+     * -------------------------------------------------------------------------
+     */
+
     @Column(
             nullable = false,
             length = 500
     )
     private String value;
+
+    /**
+     * Canonical representation of the memory.
+     *
+     * Initially this will mirror {@code value}. Later phases will populate it
+     * using the Memory Normalization pipeline before semantic duplicate
+     * detection.
+     */
+    @Column(
+            name = "normalized_value",
+            nullable = false,
+            length = 500
+    )
+    private String normalizedValue;
+
+    /*
+     * -------------------------------------------------------------------------
+     * Intelligence Metadata
+     * -------------------------------------------------------------------------
+     */
 
     @Column(
             nullable = false,
@@ -91,12 +145,22 @@ public class Memory {
     )
     private BigDecimal confidence;
 
-    @Enumerated(EnumType.STRING)
+    /**
+     * Number of independent observations that have reinforced this memory.
+     *
+     * Phase 18.1 initializes this to 1 for every newly created memory.
+     */
     @Column(
-            nullable = false,
-            length = 30
+            nullable = false
     )
-    private MemorySource source;
+    @Builder.Default
+    private Integer observationCount = 1;
+
+    /*
+     * -------------------------------------------------------------------------
+     * Audit
+     * -------------------------------------------------------------------------
+     */
 
     @CreationTimestamp
     @Column(

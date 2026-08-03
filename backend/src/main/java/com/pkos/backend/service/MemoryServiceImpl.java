@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.pkos.backend.entity.Memory;
 import com.pkos.backend.entity.User;
+import com.pkos.backend.entity.enums.MemoryStatus;
 import com.pkos.backend.entity.enums.MemoryType;
 import com.pkos.backend.repository.MemoryRepository;
 
@@ -51,12 +52,11 @@ public class MemoryServiceImpl
             String value
     ) {
 
-        return memoryRepository
-                .findByUserAndMemoryTypeAndValue(
-                        user,
-                        memoryType,
-                        value
-                );
+        return memoryRepository.findByUserAndMemoryTypeAndValue(
+                user,
+                memoryType,
+                value
+        );
     }
 
     @Override
@@ -67,12 +67,11 @@ public class MemoryServiceImpl
             String value
     ) {
 
-        return memoryRepository
-                .existsByUserAndMemoryTypeAndValue(
-                        user,
-                        memoryType,
-                        value
-                );
+        return memoryRepository.existsByUserAndMemoryTypeAndValue(
+                user,
+                memoryType,
+                value
+        );
     }
 
     @Override
@@ -80,7 +79,30 @@ public class MemoryServiceImpl
             Memory memory
     ) {
 
+        initializeDefaults(memory);
+
         return memoryRepository.save(memory);
+    }
+
+    /**
+     * Initializes newly introduced Phase 18 fields so that existing callers
+     * remain fully backward compatible.
+     */
+    private void initializeDefaults(
+            Memory memory
+    ) {
+
+        if (memory.getNormalizedValue() == null) {
+            memory.setNormalizedValue(memory.getValue());
+        }
+
+        if (memory.getObservationCount() == null) {
+            memory.setObservationCount(1);
+        }
+
+        if (memory.getStatus() == null) {
+            memory.setStatus(MemoryStatus.CURRENT);
+        }
     }
 
 }
