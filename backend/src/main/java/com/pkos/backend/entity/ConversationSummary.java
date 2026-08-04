@@ -12,7 +12,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -34,8 +33,10 @@ public class ConversationSummary {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(
+            nullable = false,
+            columnDefinition = "TEXT"
+    )
     private String summary;
 
     @Column(nullable = false)
@@ -54,8 +55,11 @@ public class ConversationSummary {
     private LocalDateTime updatedAt;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "conversation_id", nullable = false, unique = true)
+    @JoinColumn(
+            name = "conversation_id",
+            nullable = false,
+            unique = true
+    )
     private Conversation conversation;
-
 
 }

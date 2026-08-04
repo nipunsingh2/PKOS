@@ -39,6 +39,8 @@ public class MemoryManagerImpl
 
     private final MemoryExtractionService
             memoryExtractionService;
+    private final MemoryCanonicalizationService
+    memoryCanonicalizationService;
 
     private final MemoryNormalizationService
             memoryNormalizationService;
@@ -63,16 +65,36 @@ public class MemoryManagerImpl
             Conversation conversation
     ) {
 
+        System.out.println(
+        "PROCESSING CONVERSATION: "
+        + conversation.getId()
+        );
+
         User user = conversation.getUser();
+
+        System.out.println("==========================================");
+        System.out.println("MEMORY MANAGER START");
+        System.out.println("Conversation ID : " + conversation.getId());
+        System.out.println("==========================================");
 
         ConversationSummary conversationSummary =
                 conversationSummaryService
                         .getSummary(conversation)
                         .orElse(null);
 
+        System.out.println(
+        "ConversationSummary exists: "
+                + (conversationSummary != null)
+        );
+
         String summary = null;
 
         int processedUserMessageCount = 0;
+
+        System.out.println(
+                "Processed count before processing = "
+                        + processedUserMessageCount
+        );
 
         if (conversationSummary != null) {
             summary = conversationSummary.getSummary();
@@ -93,6 +115,11 @@ public class MemoryManagerImpl
                         )
                         .toList();
 
+        System.out.println(
+                "Total user messages = "
+                        + userMessages.size()
+        );
+
         if (processedUserMessageCount >= userMessages.size()) {
             return;
         }
@@ -103,15 +130,32 @@ public class MemoryManagerImpl
                         .map(ConversationMessage::getContent)
                         .toList();
 
+        System.out.println(
+                "New user messages = "
+                        + newUserMessages.size()
+        );
+
         if (newUserMessages.isEmpty()) {
             return;
         }
+
+        System.out.println(
+                "Starting extraction..."
+        );
 
         List<MemoryCandidate> candidates =
                 memoryExtractionService.extractMemories(
                         summary,
                         newUserMessages
                 );
+        for (MemoryCandidate candidate : candidates) {
+        System.out.println(
+                "MEMORY CANDIDATE -> "
+                + candidate.getMemoryType()
+                + " : "
+                + candidate.getValue()
+        );
+        }
 
         for (MemoryCandidate candidate : candidates) {
 
@@ -119,10 +163,15 @@ public class MemoryManagerImpl
                 continue;
             }
 
-            NormalizedMemory normalizedMemory =
-                    memoryNormalizationService.normalize(
-                            candidate
-                    );
+                MemoryCandidate canonicalMemory =
+                        memoryCanonicalizationService.canonicalize(
+                                candidate
+                        );
+
+                NormalizedMemory normalizedMemory =
+                        memoryNormalizationService.normalize(
+                                canonicalMemory
+                        );
 
                 Optional<Memory> existingExactMemory =
                         memoryService.getMemory(
@@ -205,6 +254,11 @@ public class MemoryManagerImpl
                             userMessages.size()
                     );
         }
+
+        System.out.println(
+                "MEMORY MANAGER FINISHED"
+        );
+        System.out.println("==========================================");
     }
 
     private boolean isValidCandidate(
