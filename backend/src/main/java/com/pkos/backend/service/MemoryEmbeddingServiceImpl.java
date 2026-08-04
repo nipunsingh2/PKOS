@@ -21,15 +21,13 @@ public class MemoryEmbeddingServiceImpl
     private final MemoryEmbeddingRepository
             memoryEmbeddingRepository;
 
-    private final TextEmbeddingService
-            textEmbeddingService;
-
     private final GeminiProperties
             geminiProperties;
 
         @Override
         public MemoryEmbedding create(
-                Memory memory
+                Memory memory,
+                float[] embedding
         ) {
 
         Optional<MemoryEmbedding> existing =
@@ -40,11 +38,6 @@ public class MemoryEmbeddingServiceImpl
         if (existing.isPresent()) {
                 return existing.get();
         }
-
-        float[] embedding =
-                textEmbeddingService.generateEmbedding(
-                        memory.getNormalizedValue()
-                );
 
         MemoryEmbedding memoryEmbedding =
                 MemoryEmbedding.builder()

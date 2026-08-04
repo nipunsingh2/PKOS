@@ -8,7 +8,8 @@ import com.pkos.backend.entity.MemoryEmbedding;
 public interface MemoryEmbeddingService {
 
     MemoryEmbedding create(
-            Memory memory
+            Memory memory,
+            float[] embedding
     );
 
     Optional<MemoryEmbedding> getByMemory(

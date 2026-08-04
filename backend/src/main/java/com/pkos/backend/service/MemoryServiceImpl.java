@@ -1,5 +1,6 @@
 package com.pkos.backend.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -102,5 +103,32 @@ public class MemoryServiceImpl
             memory.setStatus(MemoryStatus.CURRENT);
         }
     }
+
+        @Override
+        public Memory reinforce(
+                Memory memory
+        ) {
+
+        memory.setObservationCount(
+                memory.getObservationCount() + 1
+        );
+
+        double confidence =
+                memory.getConfidence().doubleValue();
+
+        confidence =
+                Math.min(
+                        confidence + 0.01,
+                        0.99
+                );
+
+        memory.setConfidence(
+                BigDecimal.valueOf(confidence)
+        );
+
+        return memoryRepository.save(
+                memory
+        );
+        }
 
 }

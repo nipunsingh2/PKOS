@@ -6,7 +6,8 @@ import java.util.List;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.Optional;
+import com.pkos.backend.config.MemoryProperties;
 import com.pkos.backend.dto.memory.MemoryCandidate;
 import com.pkos.backend.dto.memory.normalization.NormalizedMemory;
 import com.pkos.backend.entity.Conversation;
@@ -16,6 +17,8 @@ import com.pkos.backend.entity.Memory;
 import com.pkos.backend.entity.MessageRole;
 import com.pkos.backend.entity.User;
 import com.pkos.backend.entity.enums.MemorySource;
+import com.pkos.backend.entity.enums.MemoryStatus;
+import com.pkos.backend.repository.projection.MemorySimilarityProjection;
 import com.pkos.backend.service.memory.MemoryNormalizationService;
 
 import lombok.RequiredArgsConstructor;
@@ -45,6 +48,14 @@ public class MemoryManagerImpl
 
     private final MemoryEmbeddingService
             memoryEmbeddingService;
+
+        private final MemorySimilarityService
+                memorySimilarityService;
+
+        private final MemoryProperties
+                memoryProperties;
+        private final TextEmbeddingService
+                textEmbeddingService;
 
     @Override
     @Async
@@ -113,33 +124,78 @@ public class MemoryManagerImpl
                             candidate
                     );
 
-            if (memoryService.exists(
-                    user,
-                    normalizedMemory.getMemoryType(),
-                    normalizedMemory.getNormalizedValue()
-            )) {
+                Optional<Memory> existingExactMemory =
+                        memoryService.getMemory(
+                                user,
+                                normalizedMemory.getMemoryType(),
+                                normalizedMemory.getNormalizedValue()
+                        );
+
+                if (existingExactMemory.isPresent()) {
+
+                memoryService.reinforce(
+                        existingExactMemory.get()
+                );
+
                 continue;
-            }
+                }
 
-            Memory memory =
-                    Memory.builder()
-                            .user(user)
-                            .memoryType(
-                                    normalizedMemory.getMemoryType()
-                            )
-                            .value(
-                                    normalizedMemory.getOriginalValue()
-                            )
-                            .normalizedValue(
-                                    normalizedMemory.getNormalizedValue()
-                            )
-                            .confidence(DEFAULT_CONFIDENCE)
-                            .source(MemorySource.AI_CHAT)
-                            .build();
+                float[] embedding =
+                        textEmbeddingService.generateEmbedding(
+                                normalizedMemory.getNormalizedValue()
+                        );
 
-                memory = memoryService.save(memory);
+                Memory newMemory =
+                        Memory.builder()
+                                .user(user)
+                                .memoryType(normalizedMemory.getMemoryType())
+                                .value(normalizedMemory.getOriginalValue())
+                                .normalizedValue(normalizedMemory.getNormalizedValue())
+                                .confidence(DEFAULT_CONFIDENCE)
+                                .source(MemorySource.AI_CHAT)
+                                .observationCount(1)
+                                .status(MemoryStatus.CURRENT)
+                                .build();
 
-                memoryEmbeddingService.create(memory);
+                Optional<MemorySimilarityProjection> similarMemory =
+                        memorySimilarityService.findMostSimilar(
+                                user,
+                                embedding
+                        );
+
+                if (similarMemory.isPresent()
+                        && similarMemory.get().getSimilarity()
+                                >= memoryProperties.getSimilarityThreshold()) {
+
+                MemorySimilarityProjection projection =
+                        similarMemory.get();
+
+                Optional<Memory> existingSemanticMemory =
+                        memoryService.getMemory(
+                                user,
+                                projection.getMemoryType(),
+                                projection.getNormalizedValue()
+                        );
+
+                if (existingSemanticMemory.isPresent()) {
+
+                memoryService.reinforce(
+                        existingSemanticMemory.get()
+                );
+
+                continue;
+                }
+        }
+
+                Memory savedMemory =
+                        memoryService.save(
+                                newMemory
+                        );
+
+                memoryEmbeddingService.create(
+                        savedMemory,
+                        embedding
+                );
         }
 
         if (conversationSummary != null) {

@@ -34,4 +34,8 @@ public interface MemoryService {
             Memory memory
     );
 
+        Memory reinforce(
+                Memory memory
+        );
+
 }
