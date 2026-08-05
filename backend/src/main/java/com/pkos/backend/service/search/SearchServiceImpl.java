@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-
 import com.pkos.backend.dto.response.SearchResponse;
 import com.pkos.backend.dto.response.SearchResult;
 import com.pkos.backend.entity.User;
@@ -14,6 +13,8 @@ import com.pkos.backend.service.search.model.SearchCandidate;
 import com.pkos.backend.service.search.source.SearchSource;
 import com.pkos.backend.service.search.ranking.HybridRankingService;
 import lombok.RequiredArgsConstructor;
+import com.pkos.backend.service.search.merge.CandidateMergeService;
+
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +27,8 @@ public class SearchServiceImpl implements SearchService {
     private final SearchMapper searchMapper;
 
     private final HybridRankingService hybridRankingService;
+
+    private final CandidateMergeService candidateMergeService;
 
     @Override
     public SearchResponse search(
@@ -46,8 +49,11 @@ public class SearchServiceImpl implements SearchService {
                             size));
         }
 
+        List<SearchCandidate> mergedCandidates =
+                candidateMergeService.merge(candidates);
+
         List<SearchCandidate> rankedCandidates =
-                hybridRankingService.rank(candidates);
+                hybridRankingService.rank(mergedCandidates);
 
         List<SearchResult> results = rankedCandidates.stream()
                 .map(searchMapper::fromSearchCandidate)

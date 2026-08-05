@@ -7,6 +7,7 @@ import com.pkos.backend.entity.Note;
 import com.pkos.backend.entity.SearchResultType;
 import com.pkos.backend.service.search.model.SearchCandidate;
 import com.pkos.backend.service.search.model.SearchSourceType;
+import com.pkos.backend.dto.search.SemanticSearchResult;
 
 @Component
 public class SearchCandidateMapper {
@@ -23,6 +24,24 @@ public class SearchCandidateMapper {
                 .finalScore(0.0)
                 .build();
     }
+
+    public SearchCandidate fromSemanticSearchResult(
+            SemanticSearchResult semanticSearchResult) {
+
+        Note note = semanticSearchResult.getNote();
+
+        return SearchCandidate.builder()
+                .id(note.getId())
+                .sourceType(SearchSourceType.NOTE)
+                .resultType(SearchResultType.NOTE)
+                .title(note.getTitle())
+                .snippet(createSnippet(note.getContent()))
+                .keywordScore(0.0)
+                .semanticScore(semanticSearchResult.getSimilarity())
+                .finalScore(0.0)
+                .build();
+    }
+
 
     public SearchCandidate fromFileContent(FileContent fileContent) {
 
