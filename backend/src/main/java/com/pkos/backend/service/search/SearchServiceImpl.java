@@ -12,7 +12,7 @@ import com.pkos.backend.mapper.SearchMapper;
 import com.pkos.backend.service.CurrentUserService;
 import com.pkos.backend.service.search.model.SearchCandidate;
 import com.pkos.backend.service.search.source.SearchSource;
-
+import com.pkos.backend.service.search.ranking.HybridRankingService;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -24,6 +24,8 @@ public class SearchServiceImpl implements SearchService {
     private final CurrentUserService currentUserService;
 
     private final SearchMapper searchMapper;
+
+    private final HybridRankingService hybridRankingService;
 
     @Override
     public SearchResponse search(
@@ -44,7 +46,10 @@ public class SearchServiceImpl implements SearchService {
                             size));
         }
 
-        List<SearchResult> results = candidates.stream()
+        List<SearchCandidate> rankedCandidates =
+                hybridRankingService.rank(candidates);
+
+        List<SearchResult> results = rankedCandidates.stream()
                 .map(searchMapper::fromSearchCandidate)
                 .toList();
 
