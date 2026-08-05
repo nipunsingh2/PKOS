@@ -4,6 +4,10 @@ public interface KeywordSearchProjection {
 
     Long getNoteId();
 
+    String getTitle();
+
+    String getContent();
+
     Double getKeywordRank();
 
 }

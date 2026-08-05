@@ -151,7 +151,7 @@ public class NoteService {
         }
 
         @Transactional(readOnly = true)
-    public Page<NoteResponse> searchNotes(
+        public Page<NoteResponse> searchNotes(
                 String keyword,
                 int page,
                 int size,
@@ -168,7 +168,7 @@ public class NoteService {
 
         return noteRepository
                 .searchUserNotes(
-                        currentUser,
+                        currentUser.getId(),
                         keyword,
                         pageable
                 )

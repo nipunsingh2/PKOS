@@ -2,15 +2,12 @@ package com.pkos.backend.service.search.source;
 
 import java.util.List;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
-import com.pkos.backend.entity.Note;
+import com.pkos.backend.entity.SearchResultType;
 import com.pkos.backend.entity.User;
-import com.pkos.backend.mapper.SearchCandidateMapper;
 import com.pkos.backend.repository.NoteRepository;
+import com.pkos.backend.repository.projection.KeywordSearchProjection;
 import com.pkos.backend.service.search.model.SearchCandidate;
 import com.pkos.backend.service.search.model.SearchSourceType;
 
@@ -20,9 +17,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class NoteSearchSource implements SearchSource {
 
-    private final NoteRepository noteRepository;
+    private static final int SNIPPET_LENGTH = 200;
 
-    private final SearchCandidateMapper searchCandidateMapper;
+    private final NoteRepository noteRepository;
 
     @Override
     public SearchSourceType getSourceType() {
@@ -36,17 +33,43 @@ public class NoteSearchSource implements SearchSource {
             int page,
             int size) {
 
-        Pageable pageable = PageRequest.of(page, size);
+        int limit = (page + 1) * size;
 
-        Page<Note> notePage = noteRepository.searchUserNotes(
-                user,
-                query,
-                pageable);
+        List<KeywordSearchProjection> results =
+                noteRepository.keywordSearch(
+                        user.getId(),
+                        query,
+                        limit);
 
-        return notePage.getContent()
-                .stream()
-                .map(searchCandidateMapper::fromNote)
+        return results.stream()
+                .map(this::toSearchCandidate)
                 .toList();
+    }
+
+    private SearchCandidate toSearchCandidate(
+            KeywordSearchProjection projection) {               
+
+        return SearchCandidate.builder()
+                .id(projection.getNoteId())
+                .sourceType(SearchSourceType.NOTE)
+                .resultType(SearchResultType.NOTE)
+                .title(projection.getTitle())
+                .snippet(createSnippet(projection.getContent()))
+                .keywordScore(projection.getKeywordRank())
+                .semanticScore(0.0)
+                .finalScore(0.0)
+                .build();
+    }
+
+    private String createSnippet(String text) {
+
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+
+        return text.length() <= SNIPPET_LENGTH
+                ? text
+                : text.substring(0, SNIPPET_LENGTH) + "...";
     }
 
 }

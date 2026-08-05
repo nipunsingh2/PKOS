@@ -42,22 +42,6 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
             User user
     );
 
-    @Query("""
-        SELECT n
-        FROM Note n
-        WHERE n.user = :user
-        AND n.deleted = false
-        AND n.archived = false
-        AND (
-            LOWER(n.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
-            OR LOWER(n.content) LIKE LOWER(CONCAT('%', :keyword, '%'))
-        )
-        """)
-    Page<Note> searchUserNotes(
-            @Param("user") User user,
-            @Param("keyword") String keyword,
-            Pageable pageable
-    );
 
     List<Note> findByUserAndDeletedFalseAndPinnedTrue(
             User user
@@ -83,24 +67,45 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
             User user
     );
 
+
+        @Query(value = """
+                SELECT *
+                FROM notes n
+                WHERE n.user_id = :userId
+                AND n.deleted = false
+                AND n.archived = false
+                AND n.search_vector @@ websearch_to_tsquery('simple', :query)
+                """,
+                countQuery = """
+                SELECT COUNT(*)
+                FROM notes n
+                WHERE n.user_id = :userId
+                AND n.deleted = false
+                AND n.archived = false
+                AND n.search_vector @@ websearch_to_tsquery('simple', :query)
+                """,
+                nativeQuery = true)
+        Page<Note> searchUserNotes(
+                @Param("userId") Long userId,
+                @Param("query") String query,
+                Pageable pageable
+        );
+
+
         @Query(value = """
         SELECT
-                n.id AS noteId,
-                ts_rank(
-                to_tsvector(
-                        'english',
-                        coalesce(n.title, '') || ' ' || coalesce(n.content, '')
-                ),
-                plainto_tsquery('english', :query)
-                ) AS keywordRank
+        n.id AS noteId,
+        n.title AS title,
+        n.content AS content,
+        ts_rank_cd(
+                n.search_vector,
+                websearch_to_tsquery('simple', :query)
+        ) AS keywordRank
         FROM notes n
         WHERE n.user_id = :userId
         AND n.deleted = false
         AND n.archived = false
-        AND to_tsvector(
-                'english',
-                coalesce(n.title, '') || ' ' || coalesce(n.content, '')
-        ) @@ plainto_tsquery('english', :query)
+        AND n.search_vector @@ websearch_to_tsquery('simple', :query)
         ORDER BY keywordRank DESC
         LIMIT :limit
         """, nativeQuery = true)
