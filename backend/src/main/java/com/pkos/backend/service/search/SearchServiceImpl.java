@@ -3,20 +3,15 @@ package com.pkos.backend.service.search;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.pkos.backend.dto.response.SearchResponse;
 import com.pkos.backend.dto.response.SearchResult;
-import com.pkos.backend.entity.FileContent;
-import com.pkos.backend.entity.Note;
 import com.pkos.backend.entity.User;
 import com.pkos.backend.mapper.SearchMapper;
-import com.pkos.backend.repository.FileContentRepository;
-import com.pkos.backend.repository.NoteRepository;
 import com.pkos.backend.service.CurrentUserService;
+import com.pkos.backend.service.search.model.SearchCandidate;
+import com.pkos.backend.service.search.source.SearchSource;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,9 +19,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SearchServiceImpl implements SearchService {
 
-    private final NoteRepository noteRepository;
-
-    private final FileContentRepository fileContentRepository;
+    private final List<SearchSource> searchSources;
 
     private final CurrentUserService currentUserService;
 
@@ -40,33 +33,25 @@ public class SearchServiceImpl implements SearchService {
 
         User currentUser = currentUserService.getCurrentUser();
 
-        Pageable pageable = PageRequest.of(page, size);
+        List<SearchCandidate> candidates = new ArrayList<>();
 
-        Page<Note> notePage = noteRepository.searchUserNotes(
-                currentUser,
-                query,
-                pageable);
+        for (SearchSource searchSource : searchSources) {
+            candidates.addAll(
+                    searchSource.search(
+                            currentUser,
+                            query,
+                            page,
+                            size));
+        }
 
-        Page<FileContent> filePage = fileContentRepository.searchUserFiles(
-                currentUser,
-                query,
-                pageable);
-
-        List<SearchResult> results = new ArrayList<>();
-
-        notePage.getContent()
-                .stream()
-                .map(searchMapper::fromNote)
-                .forEach(results::add);
-
-        filePage.getContent()
-                .stream()
-                .map(searchMapper::fromFileContent)
-                .forEach(results::add);
+        List<SearchResult> results = candidates.stream()
+                .map(searchMapper::fromSearchCandidate)
+                .toList();
 
         return SearchResponse.builder()
                 .results(results)
                 .totalResults(results.size())
                 .build();
     }
+
 }
