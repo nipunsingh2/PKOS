@@ -9,8 +9,10 @@ import com.pkos.backend.config.GeminiProperties;
 import com.pkos.backend.dto.llm.LLMRequest;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @ConditionalOnProperty(
         prefix = "llm",
         name = "provider",
@@ -23,6 +25,8 @@ public class GeminiLLMService
     private final Client client;
 
     private final GeminiProperties geminiProperties;
+
+    private final LlmRetryExecutor retryExecutor;
 
     @Override
     public String generateResponse(
@@ -43,11 +47,19 @@ public class GeminiLLMService
             );
         }
 
+        log.info(
+                "Sending request to Gemini using model: {}",
+                geminiProperties.getChatModel()
+        );
+
         GenerateContentResponse response =
-                client.models.generateContent(
-                        geminiProperties.getChatModel(),
-                        request.getPrompt(),
-                        null
+                retryExecutor.execute(
+                        () ->
+                                client.models.generateContent(
+                                        geminiProperties.getChatModel(),
+                                        request.getPrompt(),
+                                        null
+                                )
                 );
 
         String text = response.text();
@@ -57,6 +69,8 @@ public class GeminiLLMService
                     "Gemini returned an empty response."
             );
         }
+
+        log.info("Gemini response received successfully.");
 
         return text;
     }

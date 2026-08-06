@@ -2,8 +2,6 @@ package com.pkos.backend.service;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -20,8 +18,10 @@ import com.pkos.backend.dto.openrouter.OpenRouterChoice;
 import com.pkos.backend.dto.openrouter.OpenRouterMessage;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @ConditionalOnProperty(
         prefix = "llm",
         name = "provider",
@@ -30,10 +30,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OpenRouterLLMService implements LLMService {
 
-    private static final Logger logger =
-            LoggerFactory.getLogger(OpenRouterLLMService.class);
-
     private final OpenRouterProperties openRouterProperties;
+
+    private final LlmRetryExecutor retryExecutor;
 
     private final RestClient restClient =
             RestClient.builder().build();
@@ -57,7 +56,7 @@ public class OpenRouterLLMService implements LLMService {
             );
         }
 
-        logger.info(
+        log.info(
                 "Sending request to OpenRouter using model: {}",
                 openRouterProperties.getChatModel()
         );
@@ -78,28 +77,31 @@ public class OpenRouterLLMService implements LLMService {
         try {
 
             OpenRouterChatResponse response =
-                    restClient.post()
-                            .uri(
-                                    openRouterProperties.getBaseUrl()
-                                            + "/chat/completions"
-                            )
-                            .header(
-                                    HttpHeaders.AUTHORIZATION,
-                                    "Bearer "
-                                            + openRouterProperties.getApiKey()
-                            )
-                            .header(
-                                    "HTTP-Referer",
-                                    openRouterProperties.getSiteUrl()
-                            )
-                            .header(
-                                    "X-OpenRouter-Title",
-                                    openRouterProperties.getAppName()
-                            )
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body(chatRequest)
-                            .retrieve()
-                            .body(OpenRouterChatResponse.class);
+                    retryExecutor.execute(
+                            () ->
+                                    restClient.post()
+                                            .uri(
+                                                    openRouterProperties.getBaseUrl()
+                                                            + "/chat/completions"
+                                            )
+                                            .header(
+                                                    HttpHeaders.AUTHORIZATION,
+                                                    "Bearer "
+                                                            + openRouterProperties.getApiKey()
+                                            )
+                                            .header(
+                                                    "HTTP-Referer",
+                                                    openRouterProperties.getSiteUrl()
+                                            )
+                                            .header(
+                                                    "X-OpenRouter-Title",
+                                                    openRouterProperties.getAppName()
+                                            )
+                                            .contentType(MediaType.APPLICATION_JSON)
+                                            .body(chatRequest)
+                                            .retrieve()
+                                            .body(OpenRouterChatResponse.class)
+                    );
 
             if (response == null
                     || response.getChoices() == null
@@ -122,13 +124,13 @@ public class OpenRouterLLMService implements LLMService {
                 );
             }
 
-            logger.info("OpenRouter response received successfully.");
+            log.info("OpenRouter response received successfully.");
 
             return choice.getMessage().getContent();
 
         } catch (HttpClientErrorException exception) {
 
-            logger.error(
+            log.error(
                     "OpenRouter client error: {}",
                     exception.getResponseBodyAsString()
             );
@@ -137,7 +139,7 @@ public class OpenRouterLLMService implements LLMService {
 
         } catch (HttpServerErrorException exception) {
 
-            logger.error(
+            log.error(
                     "OpenRouter server error: {}",
                     exception.getResponseBodyAsString()
             );
