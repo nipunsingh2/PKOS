@@ -9,33 +9,43 @@ import com.pkos.backend.entity.enums.MemoryType;
 
 public interface MemoryService {
 
-    List<Memory> getMemories(
-            User user
-    );
+        List<Memory> getMemories(
+                User user
+        );
 
-    List<Memory> getMemories(
-            User user,
-            MemoryType memoryType
-    );
+        List<Memory> getMemories(
+                User user,
+                MemoryType memoryType
+        );
 
-    Optional<Memory> getMemory(
-            User user,
-            MemoryType memoryType,
-            String normalizedValue
-    );
+        Optional<Memory> getMemory(
+                User user,
+                MemoryType memoryType,
+                String normalizedValue
+        );
 
-    boolean exists(
-            User user,
-            MemoryType memoryType,
-            String normalizedValue
-    );
+        boolean exists(
+                User user,
+                MemoryType memoryType,
+                String normalizedValue
+        );
 
-    Memory save(
-            Memory memory
-    );
+        Memory save(
+                Memory memory
+        );
 
         Memory reinforce(
                 Memory memory
+        );
+
+        Memory getMemoryById(
+                User user,
+                Long id
+        );
+
+        void deleteMemory(
+                User user,
+                Long id
         );
 
 }

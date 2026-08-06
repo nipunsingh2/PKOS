@@ -12,25 +12,35 @@ import com.pkos.backend.entity.enums.MemoryType;
 public interface MemoryRepository
         extends JpaRepository<Memory, Long> {
 
-    List<Memory> findByUser(
-            User user
-    );
+        List<Memory> findByUser(
+                User user
+        );
 
-    List<Memory> findByUserAndMemoryType(
-            User user,
-            MemoryType memoryType
-    );
+        List<Memory> findByUserAndMemoryType(
+                User user,
+                MemoryType memoryType
+        );
 
-    Optional<Memory> findByUserAndMemoryTypeAndNormalizedValue(
-            User user,
-            MemoryType memoryType,
-            String normalizedValue
-    );
+        Optional<Memory> findByUserAndMemoryTypeAndNormalizedValue(
+                User user,
+                MemoryType memoryType,
+                String normalizedValue
+        );
 
-    boolean existsByUserAndMemoryTypeAndNormalizedValue(
-            User user,
-            MemoryType memoryType,
-            String normalizedValue
-    );
+        boolean existsByUserAndMemoryTypeAndNormalizedValue(
+                User user,
+                MemoryType memoryType,
+                String normalizedValue
+        );
+
+        Optional<Memory> findByIdAndUser(
+                Long id,
+                User user
+        );
+
+        void deleteByIdAndUser(
+                Long id,
+                User user
+        );
 
 }

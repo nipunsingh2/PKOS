@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import com.pkos.backend.entity.ConversationMessage;
+import com.pkos.backend.entity.Memory;
 import com.pkos.backend.entity.Note;
-import com.pkos.backend.repository.projection.SemanticSearchProjection;
 
 @Service
 public class PromptBuilderServiceImpl implements PromptBuilderService {
@@ -64,8 +64,10 @@ public class PromptBuilderServiceImpl implements PromptBuilderService {
     }
 
 
+        @Override
         public String buildConversationPrompt(
                 String conversationSummary,
+                List<Memory> memories,
                 List<Note> notes,
                 List<ConversationMessage> conversationHistory,
                 String userQuestion
@@ -99,6 +101,34 @@ public class PromptBuilderServiceImpl implements PromptBuilderService {
 
                 prompt.append(conversationSummary);
                 prompt.append("\n\n");
+        }
+
+        if (memories != null && !memories.isEmpty()) {
+
+        prompt.append("""
+                ----------------------------
+                LONG-TERM USER MEMORY
+                ----------------------------
+
+                The following information has been learned from previous
+                conversations with the user.
+
+                Use these memories only when they are relevant to the
+                current question. Do not mention them unless they help
+                answer naturally.
+
+                """);
+
+        for (Memory memory : memories) {
+
+                prompt.append("- ")
+                        .append(memory.getMemoryType())
+                        .append(": ")
+                        .append(memory.getValue())
+                        .append("\n");
+        }
+
+        prompt.append("\n");
         }
 
         prompt.append("""
@@ -163,8 +193,12 @@ public class PromptBuilderServiceImpl implements PromptBuilderService {
 
                 Use:
                 1. The conversation summary (if available).
-                2. The user's notes as the primary source of truth.
-                3. The recent conversation history.
+                2. The user's long-term memories when they are relevant.
+                3. The user's notes as the primary source of truth.
+                4. The recent conversation history.
+
+                Do not mention long-term memories unless they naturally
+                improve your answer.
 
                 If the notes do not contain enough information to answer a factual question,
                 clearly state that instead of making up information.

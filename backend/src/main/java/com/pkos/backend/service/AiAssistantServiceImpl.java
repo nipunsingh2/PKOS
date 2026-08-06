@@ -3,7 +3,8 @@ package com.pkos.backend.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-
+import com.pkos.backend.entity.Memory;
+import com.pkos.backend.entity.User;
 import com.pkos.backend.dto.llm.LLMRequest;
 import com.pkos.backend.dto.request.AiChatRequest;
 import com.pkos.backend.dto.response.AiChatResponse;
@@ -33,6 +34,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     private final ConversationSummaryManager conversationSummaryManager;
 
     private final MemoryManager memoryManager;
+
+    private final MemoryService memoryService;
 
     @Override
     public AiQuestionResponse askQuestion(String question) {
@@ -97,6 +100,11 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .map(HybridSearchResult::getNote)
                 .toList();
 
+        User currentUser = conversation.getUser();
+
+        List<Memory> memories =
+                memoryService.getMemories(currentUser);
+
         String conversationSummary =
                 conversationSummaryService
                         .getSummary(conversation)
@@ -106,11 +114,20 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         String prompt =
                 promptBuilderService.buildConversationPrompt(
                         conversationSummary,
+                        memories,
                         notes,
                         conversationHistory,
                         request.getMessage()
                 );
 
+        System.out.println("""
+        ==================== PROMPT ====================
+
+        %s
+
+        ================================================
+        """.formatted(prompt));
+                
         String answer =
                 llmService.generateResponse(
                         LLMRequest.builder()

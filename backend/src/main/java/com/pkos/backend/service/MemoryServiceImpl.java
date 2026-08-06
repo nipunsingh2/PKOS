@@ -12,7 +12,7 @@ import com.pkos.backend.entity.User;
 import com.pkos.backend.entity.enums.MemoryStatus;
 import com.pkos.backend.entity.enums.MemoryType;
 import com.pkos.backend.repository.MemoryRepository;
-
+import com.pkos.backend.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -129,6 +129,32 @@ public class MemoryServiceImpl
         return memoryRepository.save(
                 memory
         );
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public Memory getMemoryById(
+                User user,
+                Long id
+        ) {
+
+        return memoryRepository
+                .findByIdAndUser(id, user)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Memory not found with id: " + id
+                        ));
+        }
+
+        @Override
+        public void deleteMemory(
+                User user,
+                Long id
+        ) {
+
+        Memory memory = getMemoryById(user, id);
+
+        memoryRepository.delete(memory);
         }
 
 }
