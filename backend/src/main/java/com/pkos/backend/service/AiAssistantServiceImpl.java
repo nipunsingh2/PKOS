@@ -16,8 +16,10 @@ import com.pkos.backend.entity.ConversationMessage;
 import com.pkos.backend.entity.ConversationSummary;
 import com.pkos.backend.entity.Note;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AiAssistantServiceImpl implements AiAssistantService {
 
@@ -131,13 +133,11 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                         request.getMessage()
                 );
 
-        System.out.println("""
-        ==================== PROMPT ====================
-
-        %s
-
-        ================================================
-        """.formatted(prompt));
+        log.debug(
+                "Generated prompt for conversation {} ({} characters)",
+                conversation.getId(),
+                prompt.length()
+        );
                 
         String answer =
                 llmService.generateResponse(

@@ -66,36 +66,23 @@ public class MemoryManagerImpl
             Conversation conversation
     ) {
 
-        System.out.println(
-        "PROCESSING CONVERSATION: "
-        + conversation.getId()
-        );
 
         User user = conversation.getUser();
 
-        System.out.println("==========================================");
-        System.out.println("MEMORY MANAGER START");
-        System.out.println("Conversation ID : " + conversation.getId());
-        System.out.println("==========================================");
+        log.info("Memory manager started for conversation {}", conversation.getId());
 
         ConversationSummary conversationSummary =
                 conversationSummaryService
                         .getSummary(conversation)
                         .orElse(null);
 
-        System.out.println(
-        "ConversationSummary exists: "
-                + (conversationSummary != null)
-        );
+        log.debug("Conversation summary exists: {}", conversationSummary != null);
 
         String summary = null;
 
         int processedUserMessageCount = 0;
 
-        System.out.println(
-                "Processed count before processing = "
-                        + processedUserMessageCount
-        );
+        log.info("Processed count before processing = {}", processedUserMessageCount);
 
         if (conversationSummary != null) {
             summary = conversationSummary.getSummary();
@@ -116,10 +103,8 @@ public class MemoryManagerImpl
                         )
                         .toList();
 
-        System.out.println(
-                "Total user messages = "
-                        + userMessages.size()
-        );
+        log.debug("Total user messages: {}", userMessages.size());
+
 
         if (processedUserMessageCount >= userMessages.size()) {
             return;
@@ -131,18 +116,15 @@ public class MemoryManagerImpl
                         .map(ConversationMessage::getContent)
                         .toList();
 
-        System.out.println(
-                "New user messages = "
-                        + newUserMessages.size()
-        );
+        log.debug("New user messages to process: {}", newUserMessages.size());
+
 
         if (newUserMessages.isEmpty()) {
             return;
         }
 
-        System.out.println(
-                "Starting extraction..."
-        );
+        log.debug("Starting memory extraction");
+
 
         List<MemoryCandidate> candidates =
                 memoryExtractionService.extractMemories(
@@ -150,11 +132,10 @@ public class MemoryManagerImpl
                         newUserMessages
                 );
         for (MemoryCandidate candidate : candidates) {
-        System.out.println(
-                "MEMORY CANDIDATE -> "
-                + candidate.getMemoryType()
-                + " : "
-                + candidate.getValue()
+        log.debug(
+                "Memory candidate -> {} : {}",
+                candidate.getMemoryType(),
+                candidate.getValue()
         );
         }
 
@@ -268,10 +249,6 @@ public class MemoryManagerImpl
                     );
         }
 
-        System.out.println(
-                "MEMORY MANAGER FINISHED"
-        );
-        System.out.println("==========================================");
     }
 
     private boolean isValidCandidate(
