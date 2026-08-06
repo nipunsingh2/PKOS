@@ -35,7 +35,10 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
     private final MemoryManager memoryManager;
 
-    private final MemoryService memoryService;
+    private final EmbeddingService embeddingService;
+
+    private final MemorySimilarityService memorySimilarityService;
+
 
     @Override
     public AiQuestionResponse askQuestion(String question) {
@@ -101,9 +104,17 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .toList();
 
         User currentUser = conversation.getUser();
+        float[] queryEmbedding =
+                embeddingService.generateEmbedding(
+                        request.getMessage()
+                );
+
 
         List<Memory> memories =
-                memoryService.getMemories(currentUser);
+                memorySimilarityService.findTopRelevant(
+                        currentUser,
+                        queryEmbedding
+                );
 
         String conversationSummary =
                 conversationSummaryService

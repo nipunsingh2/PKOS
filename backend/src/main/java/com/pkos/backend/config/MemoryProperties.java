@@ -14,4 +14,6 @@ public class MemoryProperties {
 
     private double similarityThreshold = 0.92;
 
+    private int semanticTopK = 5;
+
 }

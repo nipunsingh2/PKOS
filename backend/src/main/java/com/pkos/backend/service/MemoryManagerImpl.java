@@ -20,10 +20,11 @@ import com.pkos.backend.entity.enums.MemorySource;
 import com.pkos.backend.entity.enums.MemoryStatus;
 import com.pkos.backend.repository.projection.MemorySimilarityProjection;
 import com.pkos.backend.service.memory.MemoryNormalizationService;
-
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional
 public class MemoryManagerImpl
@@ -159,9 +160,11 @@ public class MemoryManagerImpl
 
         for (MemoryCandidate candidate : candidates) {
 
-            if (!isValidCandidate(candidate)) {
+        if (!isValidCandidate(candidate)) {
                 continue;
-            }
+        }
+
+        try {
 
                 MemoryCandidate canonicalMemory =
                         memoryCanonicalizationService.canonicalize(
@@ -228,13 +231,13 @@ public class MemoryManagerImpl
 
                 if (existingSemanticMemory.isPresent()) {
 
-                memoryService.reinforce(
-                        existingSemanticMemory.get()
-                );
+                        memoryService.reinforce(
+                                existingSemanticMemory.get()
+                        );
 
-                continue;
+                        continue;
                 }
-        }
+                }
 
                 Memory savedMemory =
                         memoryService.save(
@@ -245,6 +248,16 @@ public class MemoryManagerImpl
                         savedMemory,
                         embedding
                 );
+
+        } catch (Exception exception) {
+
+                log.error(
+                        "Failed to process memory candidate [{} : {}]. Continuing with remaining candidates.",
+                        candidate.getMemoryType(),
+                        candidate.getValue(),
+                        exception
+                );
+        }
         }
 
         if (conversationSummary != null) {
