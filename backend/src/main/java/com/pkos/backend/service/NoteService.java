@@ -28,6 +28,9 @@ import com.pkos.backend.util.AppConstants;
 import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 import com.pkos.backend.event.NoteSavedEvent;
+import com.pkos.backend.dto.response.RelatedNoteResponse;
+import com.pkos.backend.service.graph.KnowledgeGraphService;
+
 
 @Service
 public class NoteService {
@@ -42,6 +45,8 @@ public class NoteService {
     private final TagMapper tagMapper;
     private final NotebookRepository notebookRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final KnowledgeGraphService knowledgeGraphService;
+
     public NoteService(
                 NoteRepository noteRepository,
                 NoteMapper noteMapper,
@@ -50,7 +55,8 @@ public class NoteService {
                 TagRepository tagRepository,
                 TagMapper tagMapper,
                 NotebookRepository notebookRepository,
-                ApplicationEventPublisher eventPublisher) {
+                ApplicationEventPublisher eventPublisher,
+                KnowledgeGraphService knowledgeGraphService) {
 
         this.noteRepository = noteRepository;
         this.noteMapper = noteMapper;
@@ -60,6 +66,7 @@ public class NoteService {
         this.tagMapper = tagMapper;
         this.notebookRepository = notebookRepository;
         this.eventPublisher = eventPublisher;
+        this.knowledgeGraphService = knowledgeGraphService;
         }
 
         @Transactional
@@ -213,6 +220,19 @@ public class NoteService {
                         new ResourceNotFoundException("Note not found"));
         return noteMapper.toResponse(note);
     }
+
+        @Transactional(readOnly = true)
+        public List<RelatedNoteResponse> getRelatedNotes(Long noteId) {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        // Verify the note belongs to the current user.
+        findOwnedNote(noteId, currentUser);
+
+        return knowledgeGraphService.getRelatedNotes(noteId);
+        }
+
+
     @Transactional
     @CacheEvict(value = "notes", key = "#id")
     public NoteResponse updateNote(Long id, UpdateNoteRequest request) {

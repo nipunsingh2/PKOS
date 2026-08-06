@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-
+import com.pkos.backend.service.graph.RelationshipDiscoveryService;
 import com.pkos.backend.entity.Note;
 import com.pkos.backend.exception.ResourceNotFoundException;
 import com.pkos.backend.repository.NoteRepository;
@@ -21,14 +21,17 @@ public class NoteSavedEventListener {
 
     private final NoteRepository noteRepository;
     private final NoteEmbeddingService noteEmbeddingService;
+    private final RelationshipDiscoveryService relationshipDiscoveryService;
 
-    public NoteSavedEventListener(
-            NoteRepository noteRepository,
-            NoteEmbeddingService noteEmbeddingService) {
+        public NoteSavedEventListener(
+                NoteRepository noteRepository,
+                NoteEmbeddingService noteEmbeddingService,
+                RelationshipDiscoveryService relationshipDiscoveryService) {
 
         this.noteRepository = noteRepository;
         this.noteEmbeddingService = noteEmbeddingService;
-    }
+        this.relationshipDiscoveryService = relationshipDiscoveryService;
+        }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -50,6 +53,13 @@ public class NoteSavedEventListener {
 
         logger.info(
                 "Embedding generated successfully for Note ID: {}",
+                note.getId()
+        );
+
+        relationshipDiscoveryService.discoverRelationships(note);
+
+        logger.info(
+                "Relationship discovery completed for Note ID: {}",
                 note.getId()
         );
     }

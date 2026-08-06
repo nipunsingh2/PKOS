@@ -7,4 +7,5 @@ import com.pkos.backend.dto.search.SemanticSearchResult;
 public interface SemanticRetrievalService {
 
     List<SemanticSearchResult> retrieveRelevantNotes(String query);
+
 }

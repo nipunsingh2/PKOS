@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.pkos.backend.dto.response.TagResponse;
 import java.util.List;
+import com.pkos.backend.dto.response.RelatedNoteResponse;
+
 
 @RestController
 @RequestMapping("/api/notes")
@@ -97,6 +99,15 @@ public class NoteController {
                 noteService.getNoteById(id)
         );
     }
+
+        @GetMapping("/{id}/related")
+        public ResponseEntity<List<RelatedNoteResponse>> getRelatedNotes(
+                @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                noteService.getRelatedNotes(id)
+        );
+        }
 
     @PutMapping("/{id}")
     public ResponseEntity<NoteResponse> updateNote(
