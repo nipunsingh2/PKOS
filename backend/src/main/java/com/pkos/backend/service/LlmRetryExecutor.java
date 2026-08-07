@@ -8,4 +8,8 @@ public interface LlmRetryExecutor {
             Supplier<T> supplier
     );
 
+    boolean isRetryable(
+            RuntimeException exception
+    );
+
 }

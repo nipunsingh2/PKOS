@@ -95,7 +95,8 @@ public class LlmRetryExecutorImpl
         throw lastException;
     }
 
-    private boolean isRetryable(
+    @Override
+    public boolean isRetryable(
             RuntimeException exception
     ) {
 

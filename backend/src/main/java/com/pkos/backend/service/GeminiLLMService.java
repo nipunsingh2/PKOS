@@ -13,11 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-@ConditionalOnProperty(
-        prefix = "llm",
-        name = "provider",
-        havingValue = "gemini"
-)
 @RequiredArgsConstructor
 public class GeminiLLMService
         implements LLMService {

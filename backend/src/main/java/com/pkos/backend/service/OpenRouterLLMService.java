@@ -22,11 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-@ConditionalOnProperty(
-        prefix = "llm",
-        name = "provider",
-        havingValue = "openrouter"
-)
 @RequiredArgsConstructor
 public class OpenRouterLLMService implements LLMService {
 
