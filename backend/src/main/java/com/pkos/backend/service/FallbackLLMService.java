@@ -1,5 +1,8 @@
 package com.pkos.backend.service;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class FallbackLLMService
-        implements LLMService {
+implements LLMService {
 
     private final OpenRouterLLMService openRouterLLMService;
 
@@ -43,6 +46,45 @@ public class FallbackLLMService
                 request,
                 geminiLLMService,
                 openRouterLLMService
+        );
+    }
+
+    @Override
+    public void streamResponse(
+            LLMRequest request,
+            Consumer<String> chunkConsumer
+    ) {
+
+        if (request == null) {
+            throw new IllegalArgumentException(
+                    "LLM request cannot be null."
+            );
+        }
+
+        if (chunkConsumer == null) {
+            throw new IllegalArgumentException(
+                    "Chunk consumer cannot be null."
+            );
+        }
+
+        if ("openrouter".equalsIgnoreCase(
+                llmProperties.getProvider())) {
+
+            executeStreamingWithFallback(
+                    request,
+                    openRouterLLMService,
+                    geminiLLMService,
+                    chunkConsumer
+            );
+
+            return;
+        }
+
+        executeStreamingWithFallback(
+                request,
+                geminiLLMService,
+                openRouterLLMService,
+                chunkConsumer
         );
     }
 
@@ -75,4 +117,50 @@ public class FallbackLLMService
         }
     }
 
+    private void executeStreamingWithFallback(
+            LLMRequest request,
+            LLMService primary,
+            LLMService secondary,
+            Consumer<String> chunkConsumer
+    ) {
+
+        AtomicBoolean chunkEmitted =
+                new AtomicBoolean(false);
+
+        Consumer<String> trackingConsumer =
+                chunk -> {
+                    chunkEmitted.set(true);
+                    chunkConsumer.accept(chunk);
+                };
+
+        try {
+
+            primary.streamResponse(
+                    request,
+                    trackingConsumer
+            );
+
+        } catch (RuntimeException exception) {
+
+            if (chunkEmitted.get()
+                    || !llmProperties
+                            .getFallback()
+                            .isEnabled()
+                    || !retryExecutor
+                            .isRetryable(exception)) {
+
+                throw exception;
+            }
+
+            log.warn(
+                    "Primary streaming provider failed before emitting a response chunk. Falling back to secondary provider.",
+                    exception
+            );
+
+            secondary.streamResponse(
+                    request,
+                    chunkConsumer
+            );
+        }
+    }
 }

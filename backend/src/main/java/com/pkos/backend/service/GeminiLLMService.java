@@ -1,9 +1,11 @@
 package com.pkos.backend.service;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import java.util.function.Consumer;
+
 import org.springframework.stereotype.Service;
 
 import com.google.genai.Client;
+import com.google.genai.ResponseStream;
 import com.google.genai.types.GenerateContentResponse;
 import com.pkos.backend.config.GeminiProperties;
 import com.pkos.backend.dto.llm.LLMRequest;
@@ -15,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class GeminiLLMService
-        implements LLMService {
+implements LLMService {
 
     private final Client client;
 
@@ -70,4 +72,74 @@ public class GeminiLLMService
         return text;
     }
 
+    @Override
+    public void streamResponse(
+            LLMRequest request,
+            Consumer<String> chunkConsumer
+    ) {
+
+        validateStreamingRequest(
+                request,
+                chunkConsumer
+        );
+
+        log.info(
+                "Starting streaming request to Gemini using model: {}",
+                geminiProperties.getChatModel()
+        );
+
+        ResponseStream<GenerateContentResponse> responseStream =
+                client.models.generateContentStream(
+                        geminiProperties.getChatModel(),
+                        request.getPrompt(),
+                        null
+                );
+
+        try {
+
+            for (GenerateContentResponse response :
+                    responseStream) {
+
+                String text = response.text();
+
+                if (text != null && !text.isEmpty()) {
+                    chunkConsumer.accept(text);
+                }
+            }
+
+            log.info(
+                    "Gemini streaming response completed successfully."
+            );
+
+        } finally {
+
+            responseStream.close();
+        }
+    }
+
+    private void validateStreamingRequest(
+            LLMRequest request,
+            Consumer<String> chunkConsumer
+    ) {
+
+        if (request == null) {
+            throw new IllegalArgumentException(
+                    "LLM request cannot be null."
+            );
+        }
+
+        if (request.getPrompt() == null
+                || request.getPrompt().isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Prompt cannot be null or blank."
+            );
+        }
+
+        if (chunkConsumer == null) {
+            throw new IllegalArgumentException(
+                    "Chunk consumer cannot be null."
+            );
+        }
+    }
 }
