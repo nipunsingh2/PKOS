@@ -2,11 +2,12 @@ package com.pkos.backend.service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.Optional;
+
 import com.pkos.backend.config.MemoryProperties;
 import com.pkos.backend.dto.memory.MemoryCandidate;
 import com.pkos.backend.dto.memory.normalization.NormalizedMemory;
@@ -20,6 +21,7 @@ import com.pkos.backend.entity.enums.MemorySource;
 import com.pkos.backend.entity.enums.MemoryStatus;
 import com.pkos.backend.repository.projection.MemorySimilarityProjection;
 import com.pkos.backend.service.memory.MemoryNormalizationService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Transactional
 public class MemoryManagerImpl
-        implements MemoryManager {
+implements MemoryManager {
 
     private static final BigDecimal DEFAULT_CONFIDENCE =
             BigDecimal.valueOf(0.90);
@@ -40,8 +42,9 @@ public class MemoryManagerImpl
 
     private final MemoryExtractionService
             memoryExtractionService;
+
     private final MemoryCanonicalizationService
-    memoryCanonicalizationService;
+            memoryCanonicalizationService;
 
     private final MemoryNormalizationService
             memoryNormalizationService;
@@ -52,13 +55,14 @@ public class MemoryManagerImpl
     private final MemoryEmbeddingService
             memoryEmbeddingService;
 
-        private final MemorySimilarityService
-                memorySimilarityService;
+    private final MemorySimilarityService
+            memorySimilarityService;
 
-        private final MemoryProperties
-                memoryProperties;
-        private final TextEmbeddingService
-                textEmbeddingService;
+    private final MemoryProperties
+            memoryProperties;
+
+    private final EmbeddingService
+            embeddingService;
 
     @Override
     @Async
@@ -66,23 +70,31 @@ public class MemoryManagerImpl
             Conversation conversation
     ) {
 
-
         User user = conversation.getUser();
 
-        log.info("Memory manager started for conversation {}", conversation.getId());
+        log.info(
+                "Memory manager started for conversation {}",
+                conversation.getId()
+        );
 
         ConversationSummary conversationSummary =
                 conversationSummaryService
                         .getSummary(conversation)
                         .orElse(null);
 
-        log.debug("Conversation summary exists: {}", conversationSummary != null);
+        log.debug(
+                "Conversation summary exists: {}",
+                conversationSummary != null
+        );
 
         String summary = null;
 
         int processedUserMessageCount = 0;
 
-        log.info("Processed count before processing = {}", processedUserMessageCount);
+        log.info(
+                "Processed count before processing = {}",
+                processedUserMessageCount
+        );
 
         if (conversationSummary != null) {
             summary = conversationSummary.getSummary();
@@ -103,8 +115,10 @@ public class MemoryManagerImpl
                         )
                         .toList();
 
-        log.debug("Total user messages: {}", userMessages.size());
-
+        log.debug(
+                "Total user messages: {}",
+                userMessages.size()
+        );
 
         if (processedUserMessageCount >= userMessages.size()) {
             return;
@@ -116,8 +130,10 @@ public class MemoryManagerImpl
                         .map(ConversationMessage::getContent)
                         .toList();
 
-        log.debug("New user messages to process: {}", newUserMessages.size());
-
+        log.debug(
+                "New user messages to process: {}",
+                newUserMessages.size()
+        );
 
         if (newUserMessages.isEmpty()) {
             return;
@@ -125,27 +141,27 @@ public class MemoryManagerImpl
 
         log.debug("Starting memory extraction");
 
-
         List<MemoryCandidate> candidates =
                 memoryExtractionService.extractMemories(
                         summary,
                         newUserMessages
                 );
+
         for (MemoryCandidate candidate : candidates) {
-        log.debug(
-                "Memory candidate -> {} : {}",
-                candidate.getMemoryType(),
-                candidate.getValue()
-        );
+            log.debug(
+                    "Memory candidate -> {} : {}",
+                    candidate.getMemoryType(),
+                    candidate.getValue()
+            );
         }
 
         for (MemoryCandidate candidate : candidates) {
 
-        if (!isValidCandidate(candidate)) {
+            if (!isValidCandidate(candidate)) {
                 continue;
-        }
+            }
 
-        try {
+            try {
 
                 MemoryCandidate canonicalMemory =
                         memoryCanonicalizationService.canonicalize(
@@ -166,24 +182,30 @@ public class MemoryManagerImpl
 
                 if (existingExactMemory.isPresent()) {
 
-                memoryService.reinforce(
-                        existingExactMemory.get()
-                );
+                    memoryService.reinforce(
+                            existingExactMemory.get()
+                    );
 
-                continue;
+                    continue;
                 }
 
                 float[] embedding =
-                        textEmbeddingService.generateEmbedding(
+                        embeddingService.generateEmbedding(
                                 normalizedMemory.getNormalizedValue()
                         );
 
                 Memory newMemory =
                         Memory.builder()
                                 .user(user)
-                                .memoryType(normalizedMemory.getMemoryType())
-                                .value(normalizedMemory.getOriginalValue())
-                                .normalizedValue(normalizedMemory.getNormalizedValue())
+                                .memoryType(
+                                        normalizedMemory.getMemoryType()
+                                )
+                                .value(
+                                        normalizedMemory.getOriginalValue()
+                                )
+                                .normalizedValue(
+                                        normalizedMemory.getNormalizedValue()
+                                )
                                 .confidence(DEFAULT_CONFIDENCE)
                                 .source(MemorySource.AI_CHAT)
                                 .observationCount(1)
@@ -198,26 +220,27 @@ public class MemoryManagerImpl
 
                 if (similarMemory.isPresent()
                         && similarMemory.get().getSimilarity()
-                                >= memoryProperties.getSimilarityThreshold()) {
+                                >= memoryProperties
+                                        .getSimilarityThreshold()) {
 
-                MemorySimilarityProjection projection =
-                        similarMemory.get();
+                    MemorySimilarityProjection projection =
+                            similarMemory.get();
 
-                Optional<Memory> existingSemanticMemory =
-                        memoryService.getMemory(
-                                user,
-                                projection.getMemoryType(),
-                                projection.getNormalizedValue()
-                        );
+                    Optional<Memory> existingSemanticMemory =
+                            memoryService.getMemory(
+                                    user,
+                                    projection.getMemoryType(),
+                                    projection.getNormalizedValue()
+                            );
 
-                if (existingSemanticMemory.isPresent()) {
+                    if (existingSemanticMemory.isPresent()) {
 
                         memoryService.reinforce(
                                 existingSemanticMemory.get()
                         );
 
                         continue;
-                }
+                    }
                 }
 
                 Memory savedMemory =
@@ -230,7 +253,7 @@ public class MemoryManagerImpl
                         embedding
                 );
 
-        } catch (Exception exception) {
+            } catch (Exception exception) {
 
                 log.error(
                         "Failed to process memory candidate [{} : {}]. Continuing with remaining candidates.",
@@ -238,7 +261,7 @@ public class MemoryManagerImpl
                         candidate.getValue(),
                         exception
                 );
-        }
+            }
         }
 
         if (conversationSummary != null) {
@@ -248,7 +271,6 @@ public class MemoryManagerImpl
                             userMessages.size()
                     );
         }
-
     }
 
     private boolean isValidCandidate(
@@ -260,5 +282,4 @@ public class MemoryManagerImpl
                 && candidate.getValue() != null
                 && !candidate.getValue().isBlank();
     }
-
 }
