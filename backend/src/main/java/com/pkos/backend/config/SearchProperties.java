@@ -21,5 +21,4 @@ public class SearchProperties {
     private int snippetLength = 200;
 
     private double semanticThreshold = 0.0;
-
 }

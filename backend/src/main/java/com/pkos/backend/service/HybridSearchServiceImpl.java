@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
+import com.pkos.backend.config.SearchProperties;
 import com.pkos.backend.dto.search.HybridSearchResult;
 import com.pkos.backend.dto.search.KeywordSearchResult;
 import com.pkos.backend.dto.search.SemanticSearchResult;
@@ -26,8 +27,10 @@ public class HybridSearchServiceImpl implements HybridSearchService {
     private final CurrentUserService currentUserService;
 
     private final HybridRanker hybridRanker;
-    
+
     private final ScoreNormalizer scoreNormalizer;
+
+    private final SearchProperties searchProperties;
 
     @Override
     public List<HybridSearchResult> search(String query) {
@@ -39,7 +42,7 @@ public class HybridSearchServiceImpl implements HybridSearchService {
                 keywordSearchService.search(
                         currentUserService.getCurrentUser(),
                         query,
-                        10
+                        searchProperties.getMaxResults()
                 );
 
         List<Double> semanticScores = semanticResults.stream()
@@ -50,13 +53,15 @@ public class HybridSearchServiceImpl implements HybridSearchService {
                 .map(KeywordSearchResult::getKeywordRank)
                 .toList();
 
-        Map<Long, SemanticSearchResult> semanticMap = new HashMap<>();
+        Map<Long, SemanticSearchResult> semanticMap =
+                new HashMap<>();
 
         for (SemanticSearchResult result : semanticResults) {
             semanticMap.put(result.getNoteId(), result);
         }
 
-        Map<Long, KeywordSearchResult> keywordMap = new HashMap<>();
+        Map<Long, KeywordSearchResult> keywordMap =
+                new HashMap<>();
 
         for (KeywordSearchResult result : keywordResults) {
             keywordMap.put(result.getNoteId(), result);
@@ -65,12 +70,21 @@ public class HybridSearchServiceImpl implements HybridSearchService {
         Map<Long, Note> notes = new HashMap<>();
 
         semanticResults.forEach(result ->
-                notes.put(result.getNoteId(), result.getNote()));
+                notes.put(
+                        result.getNoteId(),
+                        result.getNote()
+                )
+        );
 
         keywordResults.forEach(result ->
-                notes.put(result.getNoteId(), result.getNote()));
+                notes.put(
+                        result.getNoteId(),
+                        result.getNote()
+                )
+        );
 
-        List<HybridSearchResult> hybridResults = new ArrayList<>();
+        List<HybridSearchResult> hybridResults =
+                new ArrayList<>();
 
         for (Long noteId : notes.keySet()) {
 
@@ -80,19 +94,22 @@ public class HybridSearchServiceImpl implements HybridSearchService {
             KeywordSearchResult keyword =
                     keywordMap.get(noteId);
 
-                double semanticScore =
-                        semantic != null
-                                ? scoreNormalizer.normalize(
-                                        semantic.getSimilarity(),
-                                        semanticScores)
-                                : 0.0;
+            double semanticScore =
+                    semantic != null
+                            ? scoreNormalizer.normalize(
+                                    semantic.getSimilarity(),
+                                    semanticScores
+                            )
+                            : 0.0;
 
-                double keywordScore =
-                        keyword != null
-                                ? scoreNormalizer.normalize(
-                                        keyword.getKeywordRank(),
-                                        keywordScores)
-                                : 0.0;
+            double keywordScore =
+                    keyword != null
+                            ? scoreNormalizer.normalize(
+                                    keyword.getKeywordRank(),
+                                    keywordScores
+                            )
+                            : 0.0;
+
             double finalScore =
                     hybridRanker.calculateScore(
                             semanticScore,
@@ -109,12 +126,13 @@ public class HybridSearchServiceImpl implements HybridSearchService {
             );
         }
 
-        hybridResults.sort(
-                Comparator.comparingDouble(
-                        HybridSearchResult::getFinalScore)
-                        .reversed());
-
-        return hybridResults;
+        return hybridResults.stream()
+                .sorted(
+                        Comparator.comparingDouble(
+                                HybridSearchResult::getFinalScore
+                        ).reversed()
+                )
+                .limit(searchProperties.getMaxResults())
+                .toList();
     }
-
 }

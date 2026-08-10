@@ -2,19 +2,24 @@ package com.pkos.backend.service;
 
 import org.springframework.stereotype.Component;
 
+import com.pkos.backend.config.SearchProperties;
+
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class HybridRanker {
 
-    private static final double SEMANTIC_WEIGHT = 0.70;
-
-    private static final double KEYWORD_WEIGHT = 0.30;
+    private final SearchProperties searchProperties;
 
     public double calculateScore(
             double semanticScore,
             double keywordScore
     ) {
-        return (SEMANTIC_WEIGHT * semanticScore)
-                + (KEYWORD_WEIGHT * keywordScore);
-    }
 
+        return (searchProperties.getSemanticWeight()
+                * semanticScore)
+                + (searchProperties.getKeywordWeight()
+                * keywordScore);
+    }
 }
