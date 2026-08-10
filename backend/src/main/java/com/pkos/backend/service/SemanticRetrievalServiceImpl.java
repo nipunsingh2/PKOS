@@ -2,7 +2,6 @@ package com.pkos.backend.service;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +11,6 @@ import com.pkos.backend.entity.User;
 import com.pkos.backend.repository.NoteEmbeddingRepository;
 import com.pkos.backend.repository.NoteRepository;
 import com.pkos.backend.repository.projection.SemanticSearchProjection;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
